@@ -13,6 +13,7 @@ from ase.atoms import Atoms
 from ase.build import bulk, molecule
 from ase.calculators.calculator import compare_atoms
 from ase.calculators.emt import EMT
+from ase.calculators.mixing import LinearCombinationCalculator
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.constraints import FixAtoms, FixCartesian
 from ase.io import extxyz
@@ -488,3 +489,15 @@ def test_basic_functionality(tmp_path):
                 assert 'REF_energy=' in line
             else:
                 assert len(line.strip().split()) == 1 + 3 + 1 + 3
+
+
+def test_linear_combination_calculator():
+    """Test if results from `LinearCombinationCalculator` can be written
+
+    `LinearCombinationCalculator` has non-standard properties like
+    `energy_contributions` in `results`. Here we check if this causes errors.
+    """
+    atoms = bulk('Cu')
+    atoms.calc = LinearCombinationCalculator([EMT()], [1.0])
+    atoms.get_potential_energy()
+    atoms.write('tmp.xyz')
