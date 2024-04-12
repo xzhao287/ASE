@@ -10,18 +10,15 @@ from ase.config import cfg as _cfg
 
 
 class BaseProfile(ABC):
-    def __init__(self, parallel=True, parallel_info=None):
+    def __init__(self, parallel_info=None):
         """
         Parameters
         ----------
-        parallel : bool
-            If the calculator should be run in parallel.
         parallel_info : dict
             Additional settings for parallel execution, e.g. arguments
             for the binary for parallelization (mpiexec, srun, mpirun).
         """
         self.parallel_info = parallel_info or {}
-        self.parallel = parallel
 
     def get_command(self, inputfile, calc_command=None) -> List[str]:
         """
@@ -38,21 +35,20 @@ class BaseProfile(ABC):
             The command to run.
         """
         command = []
-        if self.parallel:
-            if 'binary' in self.parallel_info:
-                command.append(self.parallel_info['binary'])
+        if 'binary' in self.parallel_info:
+            command.append(self.parallel_info['binary'])
 
-            for key, value in self.parallel_info.items():
-                if key == 'binary':
-                    continue
+        for key, value in self.parallel_info.items():
+            if key == 'binary':
+                continue
 
-                command_key = key
+            command_key = key
 
-                if type(value) is not bool:
-                    command.append(f'{command_key}')
-                    command.append(f'{value}')
-                elif value:
-                    command.append(f'{command_key}')
+            if type(value) is not bool:
+                command.append(f'{command_key}')
+                command.append(f'{value}')
+            elif value:
+                command.append(f'{command_key}')
 
         if calc_command is None:
             command.extend(self.get_calculator_command(inputfile))
@@ -133,7 +129,7 @@ class BaseProfile(ABC):
         ...
 
     @classmethod
-    def from_config(cls, cfg, section_name, parallel_info=None, parallel=True):
+    def from_config(cls, cfg, section_name, parallel_info=None):
         """
         Create a profile from a configuration file.
 
@@ -161,7 +157,6 @@ class BaseProfile(ABC):
             return cls(
                 **cfg.parser[section_name],
                 parallel_info=parallel_config,
-                parallel=parallel,
             )
         except TypeError as err:
             raise BadConfiguration(*err.args)
@@ -216,7 +211,7 @@ class CalculatorTemplate(ABC):
         ...
 
     @abstractmethod
-    def load_profile(self, cfg, parallel_info=None, parallel=True):
+    def load_profile(self, cfg, parallel_info=None):
         ...
 
     def socketio_calculator(
@@ -300,7 +295,6 @@ class GenericFileIOCalculator(BaseCalculator, GetOutputsMixin):
         directory,
         parameters=None,
         parallel_info=None,
-        parallel=True,
     ):
         self.template = template
         if profile is None:
@@ -308,7 +302,7 @@ class GenericFileIOCalculator(BaseCalculator, GetOutputsMixin):
                 raise EnvironmentError(f'No configuration of {template.name}')
             try:
                 profile = template.load_profile(
-                    self.cfg, parallel_info=parallel_info, parallel=parallel
+                    self.cfg, parallel_info=parallel_info,
                 )
             except Exception as err:
                 configvars = self.cfg.as_dict()

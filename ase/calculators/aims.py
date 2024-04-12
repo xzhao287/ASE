@@ -185,7 +185,6 @@ class Aims(GenericFileIOCalculator):
         profile=None,
         directory='.',
         parallel_info=None,
-        parallel=True,
         **kwargs,
     ):
         """Construct the FHI-aims calculator.
@@ -216,7 +215,6 @@ class Aims(GenericFileIOCalculator):
             profile=profile,
             parameters=kwargs,
             parallel_info=parallel_info,
-            parallel=parallel,
             directory=directory,
         )
 

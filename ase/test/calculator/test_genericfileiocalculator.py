@@ -9,25 +9,15 @@ from ase.config import Config, cfg
 @pytest.mark.parametrize(
     "calculator_kwargs, result_command",
     [
-        ({"parallel": False}, ["dummy.x"]),
         (
             {
-                "parallel": False,
-                "parallel_info": {"-np": 4, "--oversubscribe": True}
-            },
-            ["dummy.x"],
-        ),
-        (
-            {
-                "parallel": True,
                 "parallel_info": {"-np": 4, "--oversubscribe": False}
             },
             ["mpirun", "-np", "4", "dummy.x"],
         ),
-        ({"parallel": True}, ["mpirun", "dummy.x"]),
+        ({}, ["mpirun", "dummy.x"]),
         (
             {
-                "parallel": True,
                 "parallel_info": {"-np": 4, "--oversubscribe": True}
             },
             ["mpirun", "-np", "4", "--oversubscribe", "dummy.x"],
