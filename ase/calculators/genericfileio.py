@@ -180,7 +180,10 @@ class BaseProfile(ABC):
         BaseProfile
             The profile object.
         """
-        parallel_config = dict(cfg.parser['parallel'])
+        try:
+            parallel_config = dict(cfg.parser['parallel'])
+        except KeyError:
+            parallel_config = {}
         parallel_info = parallel_info if parallel_info is not None else {}
         parallel_config.update(parallel_info)
 
