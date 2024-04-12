@@ -23,32 +23,6 @@ class BaseProfile(ABC):
         self.parallel_info = parallel_info or {}
         self.parallel = parallel
 
-    def get_translation_keys(self):
-        """
-        Get the translation keys for the parallel_info dictionary.
-
-        A translation key is specified in a config file with the syntax
-        `key_kwarg_trans = command, type`, e.g if `nprocs_kwarg_trans = -np`
-        is specified in the config file, then the key `nprocs` will be
-        translated to `-np`. Then `nprocs` can be specified in parallel_info
-        and will be translated to `-np` when the command is build.
-
-        Returns
-        -------
-        dict of iterable
-            Dictionary with translation keys where the keys are the keys in
-            parallel_info that will be translated, the value is what the key
-            will be translated into.
-        """
-        translation_keys = {}
-        for key, value in self.parallel_info.items():
-            if len(key) < 12:
-                continue
-            if key.endswith('_kwarg_trans'):
-                trans_key = key[:-12]
-                translation_keys[trans_key] = value
-        return translation_keys
-
     def get_command(self, inputfile, calc_command=None) -> List[str]:
         """
         Get the command to run. This should be a list of strings.
@@ -68,15 +42,11 @@ class BaseProfile(ABC):
             if 'binary' in self.parallel_info:
                 command.append(self.parallel_info['binary'])
 
-            translation_keys = self.get_translation_keys()
-
             for key, value in self.parallel_info.items():
-                if key == 'binary' or '_kwarg_trans' in key:
+                if key == 'binary':
                     continue
 
                 command_key = key
-                if key in translation_keys:
-                    command_key = translation_keys[key]
 
                 if type(value) is not bool:
                     command.append(f'{command_key}')

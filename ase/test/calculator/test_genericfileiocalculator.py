@@ -32,10 +32,6 @@ from ase.config import Config, cfg
             },
             ["mpirun", "-np", "4", "--oversubscribe", "dummy.x"],
         ),
-        (
-            {"parallel": True, "parallel_info": {"nprocs": 4}},
-            ["mpirun", "-np", "4", "dummy.x"],
-        ),
     ],
 )
 def test_run_command(
@@ -46,7 +42,7 @@ def test_run_command(
 
     mock_config = Config()
     mock_config.parser.update({
-        "parallel": {"binary": "mpirun", "nprocs_kwarg_trans": "-np"},
+        "parallel": {"binary": "mpirun"},
         "dummy": {
             "exc": "dummy.x",
         },
