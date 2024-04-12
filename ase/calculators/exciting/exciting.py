@@ -258,7 +258,6 @@ class ExcitingGroundStateCalculator(GenericFileIOCalculator):
         directory='./',
         species_path='./',
         title='ASE-generated input',
-        parallel=None,
         parallel_info=None,
     ):
         self.runner = runner
@@ -286,5 +285,4 @@ class ExcitingGroundStateCalculator(GenericFileIOCalculator):
             directory=directory,
             parameters=self.exciting_inputs,
             parallel_info=parallel_info,
-            parallel=parallel,
         )

@@ -90,7 +90,6 @@ class Octopus(GenericFileIOCalculator):
                  profile=None,
                  directory='.',
                  parallel_info=None,
-                 parallel=True,
                  **kwargs):
         """Create Octopus calculator.
 
@@ -101,8 +100,7 @@ class Octopus(GenericFileIOCalculator):
                          template=OctopusTemplate(),
                          directory=directory,
                          parameters=kwargs,
-                         parallel_info=parallel_info,
-                         parallel=parallel)
+                         parallel_info=parallel_info)
 
     @classmethod
     def recipe(cls, **kwargs):

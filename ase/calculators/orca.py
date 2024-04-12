@@ -22,7 +22,7 @@ class OrcaProfile(BaseProfile):
         # Because ORCA handles its parallelization without being called with
         # mpirun/mpiexec/etc parallel should be set to False.
         # Whether or not it is run in parallel is controlled by the orcablocks
-        super().__init__(parallel=False, parallel_info={})
+        super().__init__(parallel_info={})
         self.binary = binary
 
     def version(self):
@@ -77,7 +77,7 @@ class ORCA(GenericFileIOCalculator):
     """
 
     def __init__(self, *, profile=None, directory='.', parallel_info=None,
-                 parallel=None, **kwargs):
+                 **kwargs):
         """Construct ORCA-calculator object.
 
         Parameters

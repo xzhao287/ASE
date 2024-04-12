@@ -117,7 +117,6 @@ class Abinit(GenericFileIOCalculator):
         profile=None,
         directory='.',
         parallel_info=None,
-        parallel=True,
         **kwargs,
     ):
         """Construct ABINIT-calculator object.
@@ -143,6 +142,5 @@ class Abinit(GenericFileIOCalculator):
             profile=profile,
             directory=directory,
             parallel_info=parallel_info,
-            parallel=parallel,
             parameters=kwargs,
         )
