@@ -931,15 +931,14 @@ class Calculator(BaseCalculator):
 
 
 class OldShellProfile:
-    def __init__(self, name, command):
-        self.name = name
+    def __init__(self, command):
         self.command = command
 
     def execute(self, calc):
         if self.command is None:
             raise EnvironmentError(
                 'Please set ${} environment variable '.format(
-                    'ASE_' + self.name.upper() + '_COMMAND'
+                    'ASE_' + self.calc.upper() + '_COMMAND'
                 )
                 + 'or supply the command keyword'
             )
@@ -964,7 +963,7 @@ class OldShellProfile:
             msg = (
                 'Calculator "{}" failed with command "{}" failed in '
                 '{} with error code {}'.format(
-                    self.name, command, path, errorcode
+                    calc.name, command, path, errorcode
                 )
             )
             raise CalculationFailed(msg)
@@ -1109,7 +1108,7 @@ class FileIOCalculator(Calculator):
                 f'No configuration of {self.name}.  '
                 f'Missing section [{self.name}] in configuration')
 
-        return OldShellProfile(self.name, command)
+        return OldShellProfile(command)
 
     def calculate(
         self, atoms=None, properties=['energy'], system_changes=all_changes
