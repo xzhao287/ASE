@@ -984,8 +984,7 @@ class FileIORules:
 
 
 class ArgvProfile:
-    def __init__(self, name, argv):
-        self.name = name
+    def __init__(self, argv):
         self.argv = argv
 
     def execute(self, calc):
@@ -993,7 +992,7 @@ class ArgvProfile:
             self._call(calc, subprocess.check_call)
         except subprocess.CalledProcessError as err:
             directory = Path(calc.directory).resolve()
-            msg = (f'Calculator {self.name} failed with args {err.args} '
+            msg = (f'Calculator {calc.name} failed with args {err.args} '
                    f'in directory {directory}')
             raise CalculationFailed(msg) from err
 
@@ -1088,7 +1087,7 @@ class FileIOCalculator(Calculator):
         # This is used by the tests, do not rely on this as it will change.
         section = cfg.parser[section_name]
         argv = shlex.split(section['binary'])
-        return ArgvProfile(section_name, argv)
+        return ArgvProfile(argv)
 
     def _initialize_profile(self, command):
         if command is None:
