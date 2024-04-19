@@ -995,8 +995,9 @@ class FileIORules:
 
 
 @dataclass
-class ArgvProfile:
-    argv: List[str]
+class StandardProfile:
+    binary: str
+    command: str
     configvars: Dict[str, Any] = field(default_factory=dict)
 
     def execute(self, calc):
@@ -1030,7 +1031,7 @@ class ArgvProfile:
             stdout_fd = _maybe_open(fileio_rules.stdout_name, 'wb')
             stdin_fd = _maybe_open(fileio_rules.stdin_name, 'rb')
 
-            argv = [*self.argv, *fileio_rules.extend_argv]
+            argv = [*self.command, *fileio_rules.extend_argv]
             argv = [arg.format(prefix=calc.prefix) for arg in argv]
             return subprocess_function(
                 argv, cwd=directory,
@@ -1106,8 +1107,15 @@ class FileIOCalculator(Calculator):
         else:
             configvars = {}
 
-        argv = shlex.split(section['binary'])
-        return ArgvProfile(argv, configvars)
+        # It is kind of wrong to split the binary, but it is desirable
+        # that command and binary function the same way.
+        binary = shlex.split(section['binary'])
+        if 'command' in section:
+            command = shlex.split(section['command'])
+        else:
+            command = binary
+
+        return StandardProfile(binary, command, configvars)
 
     def _initialize_profile(self, command):
         if command is None:
