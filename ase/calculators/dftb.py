@@ -93,14 +93,20 @@ class Dftb(FileIOCalculator):
         if command is None:
             if 'DFTB_COMMAND' in self.cfg:
                 command = self.cfg['DFTB_COMMAND'] + ' > PREFIX.out'
-            else:
-                command = 'dftb+ > PREFIX.out'
 
-        if profile is None:
-            profile = self.load_argv_profile(self.cfg, 'dftb')
+        if command is None and profile is None:
+            from ase.calculators.genericfileio import BadConfiguration
+            try:
+                profile = self.load_argv_profile(self.cfg, 'dftb')
+            except BadConfiguration:
+                pass
+
+        if command is None:
+            command = 'dftb+ > PREFIX.out'
 
         if slako_dir is None:
-            slako_dir = profile.configvars.get('skt_path')
+            if profile is not None:
+                slako_dir = profile.configvars.get('skt_path')
 
             if slako_dir is None:
                 slako_dir = self.cfg.get('DFTB_PREFIX', './')

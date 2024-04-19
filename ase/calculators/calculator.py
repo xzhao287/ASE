@@ -1098,10 +1098,16 @@ class FileIOCalculator(Calculator):
     @classmethod
     def load_argv_profile(cls, cfg, section_name):
         import shlex
+        from ase.calculators.genericfileio import BadConfiguration
+        # XXX BadConfiguration class should be moved
 
         # Helper method to load configuration.
         # This is used by the tests, do not rely on this as it will change.
-        section = cfg.parser[section_name]
+        try:
+            section = cfg.parser[section_name]
+        except KeyError:
+            raise BadConfiguration(f'No {section_name!r} section')
+
         if cls.fileio_rules is not None:
             configvars = cls.fileio_rules.load_config(section)
         else:
@@ -1109,7 +1115,12 @@ class FileIOCalculator(Calculator):
 
         # It is kind of wrong to split the binary, but it is desirable
         # that command and binary function the same way.
-        binary = shlex.split(section['binary'])
+        try:
+            binary = shlex.split(section['binary'])
+        except KeyError:
+            raise BadConfiguration(
+                f'No binary field in {section_name!r} section')
+
         if 'command' in section:
             command = shlex.split(section['command'])
         else:
