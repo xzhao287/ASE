@@ -21,6 +21,7 @@ class Dftb(FileIOCalculator):
     discard_results_on_any_change = True
 
     fileio_rules = FileIOCalculator.ruleset(
+        configspec=dict(skt_path=None),
         stdout_name='{prefix}.out')
 
     def __init__(self, restart=None,
@@ -95,13 +96,18 @@ class Dftb(FileIOCalculator):
             else:
                 command = 'dftb+ > PREFIX.out'
 
+        if profile is None:
+            profile = self.load_argv_profile(self.cfg, 'dftb')
+
         if slako_dir is None:
-            slako_dir = self.cfg.get('DFTB_PREFIX', './')
+            slako_dir = profile.configvars.get('skt_path')
+
+            if slako_dir is None:
+                slako_dir = self.cfg.get('DFTB_PREFIX', './')
             if not slako_dir.endswith('/'):
                 slako_dir += '/'
 
         self.slako_dir = slako_dir
-
         if kwargs.get('Hamiltonian_', 'DFTB') == 'DFTB':
             self.default_parameters = dict(
                 Hamiltonian_='DFTB',
