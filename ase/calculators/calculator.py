@@ -3,7 +3,7 @@ import os
 import subprocess
 import warnings
 from abc import abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from math import pi, sqrt
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Set, Union
@@ -933,6 +933,7 @@ class Calculator(BaseCalculator):
 class OldShellProfile:
     def __init__(self, command):
         self.command = command
+        self.configvars = {}
 
     def execute(self, calc):
         if self.command is None:
@@ -982,10 +983,21 @@ class FileIORules:
     stdin_name: Optional[str] = None
     stdout_name: Optional[str] = None
 
+    configspec: Optional[Dict[str, Any]] = field(default_factory=dict)
 
+    def load_config(self, section):
+        dct = {}
+        for key, value in self.configspec.items():
+            if key in section:
+                value = section[key]
+            dct[key] = value
+        return dct
+
+
+@dataclass
 class ArgvProfile:
-    def __init__(self, argv):
-        self.argv = argv
+    argv: List[str]
+    configvars: Dict[str, Any] = field(default_factory=dict)
 
     def execute(self, calc):
         try:
@@ -1028,6 +1040,9 @@ class ArgvProfile:
 
 class FileIOCalculator(Calculator):
     """Base class for calculators that write/read input/output files."""
+
+    # Static specification of rules for this calculator:
+    fileio_rules: FileIORules = None
 
     # command: Optional[str] = None
     # 'Command used to start calculation'
@@ -1086,21 +1101,26 @@ class FileIOCalculator(Calculator):
         # Helper method to load configuration.
         # This is used by the tests, do not rely on this as it will change.
         section = cfg.parser[section_name]
+        if cls.fileio_rules is not None:
+            configvars = cls.fileio_rules.load_config(section)
+        else:
+            configvars = {}
+
         argv = shlex.split(section['binary'])
-        return ArgvProfile(argv)
+        return ArgvProfile(argv, configvars)
 
     def _initialize_profile(self, command):
         if command is None:
             name = 'ASE_' + self.name.upper() + '_COMMAND'
             command = self.cfg.get(name)
 
+        if command is None and self.name in self.cfg.parser:
+            return self.load_argv_profile(self.cfg, self.name)
+
         if command is None:
             # XXX issue a FutureWarning if this causes the command
             # to no longer be None
             command = self._legacy_default_command
-
-        if command is None and self.name in self.cfg.parser:
-            return self.load_argv_profile(self.cfg, self.name)
 
         if command is None:
             raise EnvironmentError(

@@ -150,6 +150,7 @@ class Siesta(FileIOCalculator):
     accepts_bandpath_keyword = True
 
     fileio_rules = FileIOCalculator.ruleset(
+        configspec=dict(pseudo_path=None),
         stdin_name='{prefix}.fdf',
         stdout_name='{prefix}.out')
 
@@ -379,6 +380,8 @@ class Siesta(FileIOCalculator):
 
         if self['pseudo_path'] is not None:
             pseudo_path = self['pseudo_path']
+        elif self.profile.configvars['pseudo_path'] is not None:
+            pseudo_path = self.profile.configvars['pseudo_path']
         elif 'SIESTA_PP_PATH' in self.cfg:
             pseudo_path = self.cfg['SIESTA_PP_PATH']
         else:
