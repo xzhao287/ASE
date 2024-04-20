@@ -222,7 +222,7 @@ class DFTBFactory:
         # assert len(self.skt_paths) == 1  # XXX instructive error?
 
     def version(self):
-        stdout = read_stdout(self.profile.argv)
+        stdout = read_stdout(self.profile.binary)
         match = re.search(r'DFTB\+ release\s*(\S+)', stdout, re.M)
         return match.group(1)
 
@@ -258,7 +258,7 @@ class ElkFactory:
         self.species_dir = cfg.parser['elk']['species_dir']
 
     def version(self):
-        output = read_stdout(self.profile.argv)
+        output = read_stdout(self.profile.binary)
         match = re.search(r'Elk code version (\S+)', output, re.M)
         return match.group(1)
 
@@ -548,21 +548,18 @@ class OrcaFactory:
 class SiestaFactory:
     def __init__(self, cfg):
         self.profile = Siesta.load_argv_profile(cfg, 'siesta')
-        self.pseudo_path = str(cfg.parser['siesta']['pseudo_path'])
 
     def version(self):
         from ase.calculators.siesta.siesta import get_siesta_version
 
-        full_ver = get_siesta_version(self.profile.argv[-1])
+        full_ver = get_siesta_version(self.profile.binary)
         m = re.match(r'siesta-(\S+)', full_ver, flags=re.I)
         if m:
             return m.group(1)
         return full_ver
 
     def calc(self, **kwargs):
-        return Siesta(
-            profile=self.profile, pseudo_path=str(self.pseudo_path), **kwargs
-        )
+        return Siesta(profile=self.profile, **kwargs)
 
     def socketio_kwargs(self, unixsocket):
         return {
@@ -582,7 +579,7 @@ class NWChemFactory:
         self.profile = NWChem.load_argv_profile(cfg, 'nwchem')
 
     def version(self):
-        stdout = read_stdout(self.profile.argv, createfile='nwchem.nw')
+        stdout = read_stdout(self.profile.binary, createfile='nwchem.nw')
         match = re.search(
             r'Northwest Computational Chemistry Package \(NWChem\) (\S+)',
             stdout,

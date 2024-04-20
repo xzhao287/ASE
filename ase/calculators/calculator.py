@@ -997,7 +997,7 @@ class FileIORules:
 @dataclass
 class StandardProfile:
     binary: str
-    command: str
+    command: List[str]
     configvars: Dict[str, Any] = field(default_factory=dict)
 
     def execute(self, calc):
@@ -1113,19 +1113,13 @@ class FileIOCalculator(Calculator):
         else:
             configvars = {}
 
-        # It is kind of wrong to split the binary, but it is desirable
-        # that command and binary function the same way.
         try:
-            binary = shlex.split(section['binary'])
+            binary = section['binary']
         except KeyError:
             raise BadConfiguration(
                 f'No binary field in {section_name!r} section')
 
-        if 'command' in section:
-            command = shlex.split(section['command'])
-        else:
-            command = binary
-
+        command = shlex.split(section.get('command', binary))
         return StandardProfile(binary, command, configvars)
 
     def _initialize_profile(self, command):
