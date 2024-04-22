@@ -72,7 +72,7 @@ pp_paths =
 
 
 [dftb]
-skt_paths = {path}/dftb
+skt_path = {path}/dftb
 
 [elk]
 species_dir = {path}/elk
@@ -225,8 +225,6 @@ class CastepFactory:
 class DFTBFactory:
     def __init__(self, cfg):
         self.profile = Dftb.load_argv_profile(cfg, 'dftb')
-        self.skt_path = cfg.parser['dftb']['skt_paths']  # multiple paths?
-        # assert len(self.skt_paths) == 1  # XXX instructive error?
 
     def version(self):
         stdout = read_stdout(self.profile.binary)
@@ -234,11 +232,7 @@ class DFTBFactory:
         return match.group(1)
 
     def calc(self, **kwargs):
-        return Dftb(
-            profile=self.profile,
-            slako_dir=str(self.skt_path) + '/',  # XXX not obvious
-            **kwargs,
-        )
+        return Dftb(profile=self.profile, **kwargs)
 
     def socketio_kwargs(self, unixsocket):
         return dict(
