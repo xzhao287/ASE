@@ -59,9 +59,6 @@ tests.""")
             return ''  # empty configfile
         path = self.datafiles_module.paths.DataFiles().datapath
         datafile_config = f"""\
-# Dummy parallel section (make this unnecessary)
-[parallel]
-
 # Configuration for ase-datafiles
 
 [abinit]
