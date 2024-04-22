@@ -11,19 +11,6 @@ def get_version_from_orca_header(orca_header):
 
 
 class OrcaProfile(BaseProfile):
-    def __init__(self, binary, **kwargs):
-        """
-        Parameters
-        ----------
-        binary : str
-            Full path to the orca binary, if full path is not specified ORCA
-            cannot run in parallel.
-        """
-        # Because ORCA handles its parallelization without being called with
-        # mpirun/mpiexec/etc parallel should be set to False.
-        # Whether or not it is run in parallel is controlled by the orcablocks
-        super().__init__(binary, parallel_info={})
-
     def version(self):
         # XXX Allow MPI in argv; the version call should not be parallel.
         from ase.calculators.genericfileio import read_stdout

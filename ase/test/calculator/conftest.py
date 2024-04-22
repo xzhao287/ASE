@@ -9,10 +9,6 @@ def _calculator_tests_always_use_testdir(testdir):
 
 
 class DummyProfile(BaseProfile):
-
-    def __init__(self, exc, **kwargs):
-        super().__init__(exc, **kwargs)
-
     def get_calculator_command(self, inputfile):
         if not inputfile:
             return [self.binary]
