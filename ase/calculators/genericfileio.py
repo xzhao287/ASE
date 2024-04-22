@@ -10,7 +10,7 @@ from ase.config import cfg as _cfg
 
 
 class BaseProfile(ABC):
-    def __init__(self, parallel_info=None):
+    def __init__(self, binary, parallel_info=None):
         """
         Parameters
         ----------
@@ -18,6 +18,7 @@ class BaseProfile(ABC):
             Additional settings for parallel execution, e.g. arguments
             for the binary for parallelization (mpiexec, srun, mpirun).
         """
+        self.binary = binary
         self.parallel_info = parallel_info or {}
 
     def get_command(self, inputfile, calc_command=None) -> List[str]:

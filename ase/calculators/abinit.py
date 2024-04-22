@@ -13,8 +13,7 @@ from ase.calculators.genericfileio import (BaseProfile, CalculatorTemplate,
 
 class AbinitProfile(BaseProfile):
     def __init__(self, binary, *, pp_paths=None, **kwargs):
-        super().__init__(**kwargs)
-        self.binary = binary
+        super().__init__(binary, **kwargs)
         # XXX pp_paths is a raw configstring when it gets here.
         # All the config stuff should have been loaded somehow by now,
         # so this should be refactored.º

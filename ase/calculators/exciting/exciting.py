@@ -33,10 +33,9 @@ class ExcitingProfile(BaseProfile):
     """
 
     def __init__(self, binary, species_path=None, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(binary, **kwargs)
 
         self.species_path = species_path
-        self.binary = binary
 
     def version(self):
         """Return exciting version."""

@@ -20,8 +20,7 @@ class OctopusIOError(IOError):
 
 class OctopusProfile(BaseProfile):
     def __init__(self, binary, **kwargs):
-        super().__init__(**kwargs)
-        self.binary = binary
+        super().__init__(binary, **kwargs)
 
     def get_calculator_command(self, inputfile):
         return [self.binary]

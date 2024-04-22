@@ -25,8 +25,7 @@ def get_aims_version(string):
 
 class AimsProfile(BaseProfile):
     def __init__(self, binary, default_species_directory=None, **kwargs):
-        super().__init__(**kwargs)
-        self.binary = binary
+        super().__init__(binary, **kwargs)
         self.default_species_directory = default_species_directory
 
     def get_calculator_command(self, inputfile):

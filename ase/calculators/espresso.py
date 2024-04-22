@@ -30,8 +30,7 @@ compatibility_msg = (
 
 class EspressoProfile(BaseProfile):
     def __init__(self, binary, pseudo_dir, **kwargs):
-        super().__init__(**kwargs)
-        self.binary = binary
+        super().__init__(binary, **kwargs)
         self.pseudo_dir = Path(pseudo_dir)
 
     @staticmethod

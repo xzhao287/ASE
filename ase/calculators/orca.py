@@ -22,8 +22,7 @@ class OrcaProfile(BaseProfile):
         # Because ORCA handles its parallelization without being called with
         # mpirun/mpiexec/etc parallel should be set to False.
         # Whether or not it is run in parallel is controlled by the orcablocks
-        super().__init__(parallel_info={})
-        self.binary = binary
+        super().__init__(binary, parallel_info={})
 
     def version(self):
         # XXX Allow MPI in argv; the version call should not be parallel.

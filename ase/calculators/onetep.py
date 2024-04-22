@@ -32,8 +32,7 @@ class OnetepProfile(BaseProfile):
             Additional kwargs are passed to the BaseProfile
             class.
         """
-        super().__init__(**kwargs)
-        self.binary = binary
+        super().__init__(binary, **kwargs)
         self.old = old
 
     def version(self):
