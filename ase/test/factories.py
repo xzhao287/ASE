@@ -99,8 +99,10 @@ pseudo_path = {path}/siesta
         for name in factory_classes:
             # We don't want MPI to run in the tests.  For testing
             # we override the command to always be the binary:
-            if name in cfg:
-                cfg[name]['command'] = cfg[name]['binary']
+            if name in cfg.parser:
+                section = cfg.parser[name]
+                if 'command' in section:
+                    section['command'] = section['binary']
 
         cfg.parser.read_string(self.datafile_config)
         return cfg
