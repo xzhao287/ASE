@@ -21,7 +21,8 @@ class Config(Mapping):
             return shlex.split(argv)
 
         self.parser = configparser.ConfigParser(
-            converters={"argv": argv_converter})
+            converters={"argv": argv_converter},
+            interpolation=configparser.ExtendedInterpolation())
         self.paths = []
 
     def _env(self):
