@@ -101,7 +101,7 @@ pseudo_path = {path}/siesta
             # we override the command to always be the binary:
             if name in cfg.parser:
                 section = cfg.parser[name]
-                if 'command' in section:
+                if 'binary' in section:
                     section['command'] = section['binary']
 
         cfg.parser.read_string(self.datafile_config)
