@@ -20,7 +20,7 @@ class OctopusIOError(IOError):
 
 class OctopusProfile(BaseProfile):
     def get_calculator_command(self, inputfile):
-        return [self.binary]
+        return []
 
     def version(self):
         import re

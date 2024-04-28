@@ -42,7 +42,7 @@ class OnetepProfile(BaseProfile):
         return '1.0.0'
 
     def get_calculator_command(self, inputfile):
-        return [self.binary, str(inputfile)]
+        return [str(inputfile)]
 
 
 class OnetepTemplate(CalculatorTemplate):

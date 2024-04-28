@@ -29,7 +29,7 @@ class AimsProfile(BaseProfile):
         self.default_species_directory = default_species_directory
 
     def get_calculator_command(self, inputfile):
-        return [self.binary]
+        return []
 
     def version(self):
         return get_aims_version(read_stdout(self.binary))
@@ -166,7 +166,7 @@ class AimsTemplate(CalculatorTemplate):
         return AimsProfile.from_config(cfg, self.name, **kwargs)
 
     def socketio_argv(self, profile, unixsocket, port):
-        return [profile.binary]
+        return []
 
     def socketio_parameters(self, unixsocket, port):
         if port:

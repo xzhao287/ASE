@@ -28,12 +28,12 @@ class AbinitProfile(BaseProfile):
         return check_output(argv, encoding='ascii').strip()
 
     def get_calculator_command(self, inputfile):
-        return [self.binary, str(inputfile)]
+        return [str(inputfile)]
 
     def socketio_argv_unix(self, socket):
         # XXX clean up the passing of the inputfile
         inputfile = AbinitTemplate().input_file
-        return [self.binary, inputfile, '--ipi', f'{socket}:UNIX']
+        return [inputfile, '--ipi', f'{socket}:UNIX']
 
 
 class AbinitTemplate(CalculatorTemplate):

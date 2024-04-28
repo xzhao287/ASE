@@ -18,7 +18,7 @@ class OrcaProfile(BaseProfile):
         return get_version_from_orca_header(stdout)
 
     def get_calculator_command(self, inputfile):
-        return [self.binary, inputfile]
+        return [inputfile]
 
 
 class OrcaTemplate(CalculatorTemplate):

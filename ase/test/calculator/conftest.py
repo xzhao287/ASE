@@ -11,8 +11,8 @@ def _calculator_tests_always_use_testdir(testdir):
 class DummyProfile(BaseProfile):
     def get_calculator_command(self, inputfile):
         if not inputfile:
-            return [self.binary]
-        return [self.binary, inputfile]
+            return []
+        return [inputfile]
 
     def version(self):
         return "0.0.0"

@@ -53,9 +53,9 @@ class ExcitingProfile(BaseProfile):
         # input_file unused for exciting, it looks for input.xml in run
         # directory.
         if input_file is None:
-            return [self.binary]
+            return []
         else:
-            return [self.binary, str(input_file)]
+            return [str(input_file)]
 
 
 class ExcitingGroundStateTemplate(CalculatorTemplate):
