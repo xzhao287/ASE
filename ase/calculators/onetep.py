@@ -19,7 +19,7 @@ class OnetepProfile(BaseProfile):
     now deprecated "ASE_ONETEP_COMMAND".
     """
 
-    def __init__(self, binary, old=False, **kwargs):
+    def __init__(self, binary, **kwargs):
         """
         Parameters
         ----------
@@ -33,7 +33,6 @@ class OnetepProfile(BaseProfile):
             class.
         """
         super().__init__(binary, **kwargs)
-        self.old = old
 
     def version(self):
         lines = read_stdout(self.binary)
@@ -43,10 +42,7 @@ class OnetepProfile(BaseProfile):
         return '1.0.0'
 
     def get_calculator_command(self, inputfile):
-        if self.old:
-            return self.binary.split() + [str(inputfile)]
-        else:
-            return [self.binary, str(inputfile)]
+        return [self.binary, str(inputfile)]
 
 
 class OnetepTemplate(CalculatorTemplate):
@@ -158,10 +154,11 @@ class Onetep(GenericFileIOCalculator):
 
         if 'ASE_ONETEP_COMMAND' in environ and profile is None:
             import warnings
+            import shlex
             warnings.warn("using ASE_ONETEP_COMMAND env is \
                           deprecated, please use OnetepProfile",
                           FutureWarning)
-            profile = OnetepProfile(environ['ASE_ONETEP_COMMAND'], old=True)
+            profile = OnetepProfile(shlex.split(environ['ASE_ONETEP_COMMAND']))
 
         super().__init__(profile=profile, template=self.template,
                          directory=directory,
