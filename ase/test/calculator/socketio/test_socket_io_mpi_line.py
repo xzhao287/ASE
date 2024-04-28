@@ -5,9 +5,10 @@ from ase.config import Config
 
 def test_socketio_mpi_generator():
     cfg = Config()
-    cfg.parser["parallel"] = {"binary": "mpirun"}
-    cfg.parser["espresso"] = {"binary": "pw.x", "pseudo_dir": "test"}
-    cfg.parser["abinit"] = {"binary": "abinit"}
+    cfg.parser["espresso"] = {"binary": "pw.x", "pseudo_dir": "test",
+                              "command": "mpirun ${binary}"}
+    cfg.parser["abinit"] = {"binary": "abinit",
+                            "command": "mpirun ${binary}"}
 
     for temp_class in [EspressoTemplate, AbinitTemplate]:
         template = temp_class()
@@ -18,8 +19,5 @@ def test_socketio_mpi_generator():
             inputfile=None,
             calc_command=socket_argv
         )
-        print(profile_command)
-        assert all(
-            test == ref
-            for test, ref in zip(profile_command, ["mpirun"] + socket_argv)
-        )
+
+        assert profile_command == ["mpirun", profile.binary, *socket_argv]

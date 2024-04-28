@@ -24,6 +24,10 @@ class BaseProfile(ABC):
         if command is None:
             command = [binary]
         self.command = command
+
+        if parallel_info is None:
+            parallel_info = {}
+
         self.parallel_info = parallel_info
 
     def get_command(self, inputfile, calc_command=None) -> List[str]:
@@ -40,15 +44,13 @@ class BaseProfile(ABC):
         list of str
             The command to run.
         """
-        if not self.parallel_info:
+        if 'binary' not in self.parallel_info:
             assert not isinstance(self.command, str)
             if calc_command is None:
                 calc_command = self.get_calculator_command(inputfile)
             return [*self.command, *calc_command]
 
-        command = []
-        if 'binary' in self.parallel_info:
-            command.append(self.parallel_info['binary'])
+        command = [self.parallel_info['binary']]
 
         for key, value in self.parallel_info.items():
             if key == 'binary':
@@ -62,7 +64,7 @@ class BaseProfile(ABC):
             elif value:
                 command.append(f'{command_key}')
 
-        command = [self.binary]
+        command.append(self.binary)
 
         if calc_command is None:
             command.extend(self.get_calculator_command(inputfile))
@@ -166,19 +168,25 @@ class BaseProfile(ABC):
             parallel_config = dict(cfg.parser['parallel'])
         except KeyError:
             parallel_config = {}
+
         parallel_info = parallel_info if parallel_info is not None else {}
         parallel_config.update(parallel_info)
 
         section = cfg.parser[section_name]
         binary = section['binary']
+
         if 'command' in section:
             command = shlex.split(section['command'])
-        command = [binary]
+        else:
+            command = [binary]
 
         kwargs = {
             varname: section[varname]
             for varname in cls.configvars if varname in section
         }
+
+        if 'binary' in parallel_config:
+            kwargs['parallel_info'] = parallel_config
 
         try:
             return cls(binary=binary, command=command, **kwargs)
