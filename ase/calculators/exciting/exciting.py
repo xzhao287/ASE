@@ -31,6 +31,7 @@ class ExcitingProfile(BaseProfile):
        * OnlyTypo fix part of the profile used in the base class is the run
          method, which is part of the BinaryRunner class.
     """
+    configvars = {'species_path'}
 
     def __init__(self, binary, species_path=None, **kwargs):
         super().__init__(binary, **kwargs)
