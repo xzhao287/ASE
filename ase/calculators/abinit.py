@@ -12,6 +12,8 @@ from ase.calculators.genericfileio import (BaseProfile, CalculatorTemplate,
 
 
 class AbinitProfile(BaseProfile):
+    configvars = {'pp_paths'}
+
     def __init__(self, binary, *, pp_paths=None, **kwargs):
         super().__init__(binary, **kwargs)
         # XXX pp_paths is a raw configstring when it gets here.
