@@ -42,7 +42,9 @@ class BaseProfile(ABC):
         """
         if not self.parallel_info:
             assert not isinstance(self.command, str)
-            return [*self.command, *self.get_calculator_command(inputfile)]
+            if calc_command is None:
+                calc_command = self.get_calculator_command(inputfile)
+            return [*self.command, *calc_command]
 
         command = []
         if 'binary' in self.parallel_info:
