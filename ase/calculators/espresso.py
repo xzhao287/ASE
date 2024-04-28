@@ -29,6 +29,8 @@ compatibility_msg = (
 
 
 class EspressoProfile(BaseProfile):
+    configvars = {'pseudo_dir'}
+
     def __init__(self, binary, pseudo_dir, **kwargs):
         super().__init__(binary, **kwargs)
         self.pseudo_dir = Path(pseudo_dir)

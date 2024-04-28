@@ -10,7 +10,9 @@ from ase.config import cfg as _cfg
 
 
 class BaseProfile(ABC):
-    def __init__(self, binary, parallel_info=None):
+    configvars = set()
+
+    def __init__(self, binary, command=None, parallel_info=None):
         """
         Parameters
         ----------
@@ -19,7 +21,10 @@ class BaseProfile(ABC):
             for the binary for parallelization (mpiexec, srun, mpirun).
         """
         self.binary = binary
-        self.parallel_info = parallel_info or {}
+        if command is None:
+            command = [binary]
+        self.command = command
+        self.parallel_info = parallel_info
 
     def get_command(self, inputfile, calc_command=None) -> List[str]:
         """
@@ -35,6 +40,10 @@ class BaseProfile(ABC):
         list of str
             The command to run.
         """
+        if not self.parallel_info:
+            assert not isinstance(self.command, str)
+            return [*self.command, *self.get_calculator_command(inputfile)]
+
         command = []
         if 'binary' in self.parallel_info:
             command.append(self.parallel_info['binary'])
@@ -149,6 +158,8 @@ class BaseProfile(ABC):
         BaseProfile
             The profile object.
         """
+        import shlex
+
         try:
             parallel_config = dict(cfg.parser['parallel'])
         except KeyError:
@@ -156,11 +167,19 @@ class BaseProfile(ABC):
         parallel_info = parallel_info if parallel_info is not None else {}
         parallel_config.update(parallel_info)
 
+        section = cfg.parser[section_name]
+        binary = section['binary']
+        if 'command' in section:
+            command = shlex.split(section['command'])
+        command = [binary]
+
+        kwargs = {
+            varname: section[varname]
+            for varname in cls.configvars if varname in section
+        }
+
         try:
-            return cls(
-                **cfg.parser[section_name],
-                parallel_info=parallel_config,
-            )
+            return cls(binary=binary, command=command, **kwargs)
         except TypeError as err:
             raise BadConfiguration(*err.args)
 
