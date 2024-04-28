@@ -93,8 +93,6 @@ class ORCA(GenericFileIOCalculator):
 
         """
 
-        assert parallel is None, \
-            'ORCA does not support keyword parallel - use orcablocks'
         assert parallel_info is None, \
             'ORCA does not support keyword parallel_info - use orcablocks'
 
