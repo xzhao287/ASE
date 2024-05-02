@@ -800,64 +800,6 @@ End CASTEP Interface Documentation
         """Check for system changes since last calculation."""
         return compare_atoms(self._old_atoms, atoms)
 
-    def _castep_find_last_record(self, castep_file):
-        """Checks wether a given castep file has a regular
-        ending message following the last banner message. If this
-        is the case, the line number of the last banner is message
-        is return, otherwise False.
-
-        returns (record_start, record_end, end_found, last_record_complete)
-        """
-        if isinstance(castep_file, str):
-            castep_file = paropen(castep_file, 'r')
-            file_opened = True
-        else:
-            file_opened = False
-        record_starts = []
-        while True:
-            line = castep_file.readline()
-            if (('Welcome' in line or 'Materials Studio' in line)
-                    and 'CASTEP' in line):
-                record_starts = [castep_file.tell()] + record_starts
-            if not line:
-                break
-
-        if record_starts == []:
-            warnings.warn('Could not find CASTEP label in result file: %s.'
-                          ' Are you sure this is a .castep file?' % castep_file)
-            return None
-
-        # search for regular end of file
-        end_found = False
-        # start to search from record beginning from the back
-        # and see if
-        record_end = -1
-        for record_nr, record_start in enumerate(record_starts):
-            castep_file.seek(record_start)
-            while True:
-                line = castep_file.readline()
-                if not line:
-                    break
-                if 'Finalisation time   =' in line:
-                    end_found = True
-                    record_end = castep_file.tell()
-                    break
-
-            if end_found:
-                break
-
-        if file_opened:
-            castep_file.close()
-
-        if end_found:
-            # record_nr == 0 corresponds to the last record here
-            if record_nr == 0:
-                return (record_start, record_end, True, True)
-            else:
-                return (record_start, record_end, True, False)
-        else:
-            return (0, record_end, False, False)
-
     def read(self, castep_file=None):
         """Read a castep file into the current instance."""
 
@@ -903,11 +845,9 @@ End CASTEP Interface Documentation
             err_file.close()
             # we return right-away because it might
             # just be here from a previous run
-        # look for last result, if several CASTEP
-        # run are appended
 
-        record_start, record_end, end_found, _\
-            = self._castep_find_last_record(out)
+        # look for last result, if several CASTEP run are appended
+        record_start, record_end, end_found, _ = _castep_find_last_record(out)
         if not end_found:
             warnings.warn(
                 f'No regular end found in {castep_file} file. {self._error}')
@@ -1844,6 +1784,67 @@ ppwarning = ('Warning: PP files have neither been '
              'linked nor copied to the working directory. Make '
              'sure to set the evironment variable PSPOT_DIR '
              'accordingly!')
+
+
+def _castep_find_last_record(castep_file):
+    """Checks wether a given castep file has a regular
+    ending message following the last banner message. If this
+    is the case, the line number of the last banner is message
+    is return, otherwise False.
+
+    returns (record_start, record_end, end_found, last_record_complete)
+    """
+    if isinstance(castep_file, str):
+        castep_file = paropen(castep_file, 'r')
+        file_opened = True
+    else:
+        file_opened = False
+    record_starts = []
+    while True:
+        line = castep_file.readline()
+        if (('Welcome' in line or 'Materials Studio' in line)
+                and 'CASTEP' in line):
+            record_starts = [castep_file.tell()] + record_starts
+        if not line:
+            break
+
+    if not record_starts:
+        warnings.warn(
+            f'Could not find CASTEP label in result file: {castep_file}.'
+            ' Are you sure this is a .castep file?'
+        )
+        return None
+
+    # search for regular end of file
+    end_found = False
+    # start to search from record beginning from the back
+    # and see if
+    record_end = -1
+    for record_nr, record_start in enumerate(record_starts):
+        castep_file.seek(record_start)
+        while True:
+            line = castep_file.readline()
+            if not line:
+                break
+            if 'Finalisation time   =' in line:
+                end_found = True
+                record_end = castep_file.tell()
+                break
+
+        if end_found:
+            break
+
+    if file_opened:
+        castep_file.close()
+
+    if end_found:
+        # record_nr == 0 corresponds to the last record here
+        if record_nr == 0:
+            return (record_start, record_end, True, True)
+        else:
+            return (record_start, record_end, True, False)
+    else:
+        return (0, record_end, False, False)
 
 
 def _read_header(out: io.TextIOBase):
