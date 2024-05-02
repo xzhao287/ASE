@@ -983,7 +983,7 @@ class FileIORules:
     stdin_name: Optional[str] = None
     stdout_name: Optional[str] = None
 
-    configspec: Optional[Dict[str, Any]] = field(default_factory=dict)
+    configspec: Dict[str, Any] = field(default_factory=dict)
 
     def load_config(self, section):
         dct = {}
@@ -1043,7 +1043,7 @@ class FileIOCalculator(Calculator):
     """Base class for calculators that write/read input/output files."""
 
     # Static specification of rules for this calculator:
-    fileio_rules: FileIORules = None
+    fileio_rules: Optional[FileIORules] = None
 
     # command: Optional[str] = None
     # 'Command used to start calculation'

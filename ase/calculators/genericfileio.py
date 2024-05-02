@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from contextlib import ExitStack
 from os import PathLike
 from pathlib import Path
-from typing import Any, Iterable, List, Mapping, Optional
+from typing import Any, Iterable, List, Mapping, Optional, Set
 
 from ase.calculators.abc import GetOutputsMixin
 from ase.calculators.calculator import BaseCalculator, EnvironmentError
@@ -10,7 +10,7 @@ from ase.config import cfg as _cfg
 
 
 class BaseProfile(ABC):
-    configvars = set()
+    configvars: Set[str] = set()
 
     def __init__(self, binary, command=None, parallel_info=None):
         """
