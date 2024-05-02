@@ -800,22 +800,12 @@ End CASTEP Interface Documentation
         """Check for system changes since last calculation."""
         return compare_atoms(self._old_atoms, atoms)
 
-    def read(self, castep_file=None):
+    def read(self, castep_file):
         """Read a castep file into the current instance."""
 
         _close = True
 
-        if castep_file is None:
-            if self._castep_file:
-                castep_file = self._castep_file
-                out = paropen(castep_file, 'r')
-            else:
-                warnings.warn('No CASTEP file specified')
-                return
-            if not os.path.exists(castep_file):
-                warnings.warn('No CASTEP file found')
-
-        elif isinstance(castep_file, str):
+        if isinstance(castep_file, str):
             out = paropen(castep_file, 'r')
 
         else:
@@ -1344,7 +1334,7 @@ End CASTEP Interface Documentation
                 err_file = paropen(err_file)
                 self._error = err_file.read()
                 err_file.close()
-            self.read()
+            self.read(self._castep_file)
 
             # we need to push the old state here!
             # although run() pushes it, read() may change the atoms object
