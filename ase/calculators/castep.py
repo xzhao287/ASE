@@ -809,22 +809,7 @@ End CASTEP Interface Documentation
             out = paropen(castep_file, 'r')
 
         else:
-            # in this case we assume that we have a fileobj already, but check
-            # for attributes in order to avoid extended EAFP blocks.
-            out = castep_file
-
-            # look before you leap...
-            attributes = ['name',
-                          'seek',
-                          'close',
-                          'readline',
-                          'tell']
-
-            for attr in attributes:
-                if not hasattr(out, attr):
-                    raise TypeError(
-                        '"castep_file" is neither str nor valid fileobj')
-
+            # in this case we assume that we have a fileobj already
             castep_file = out.name
             _close = False
 
