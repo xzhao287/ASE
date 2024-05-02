@@ -838,19 +838,10 @@ End CASTEP Interface Documentation
             castep_file = out.name
             _close = False
 
-        err_file = f'{self._seed}.0001.err'
-        if os.path.exists(err_file):
-            err_file = paropen(err_file)
-            self._error = err_file.read()
-            err_file.close()
-            # we return right-away because it might
-            # just be here from a previous run
-
         # look for last result, if several CASTEP run are appended
         record_start, record_end, end_found, _ = _castep_find_last_record(out)
         if not end_found:
-            warnings.warn(
-                f'No regular end found in {castep_file} file. {self._error}')
+            warnings.warn(f'No regular end found in {castep_file} file.')
             if _close:
                 out.close()
             return
@@ -1348,6 +1339,11 @@ End CASTEP Interface Documentation
             if self._seed is None:
                 basename = os.path.basename(self._castep_file)
                 self._seed = os.path.splitext(basename)[0]
+            err_file = f'{self._seed}.0001.err'
+            if os.path.exists(err_file):
+                err_file = paropen(err_file)
+                self._error = err_file.read()
+                err_file.close()
             self.read()
 
             # we need to push the old state here!
