@@ -838,9 +838,6 @@ End CASTEP Interface Documentation
                 line = castep_file.readline()
                 if not line:
                     break
-                if 'warn' in line.lower():
-                    self._warnings.append(line)
-
                 if 'Finalisation time   =' in line:
                     end_found = True
                     record_end = castep_file.tell()
