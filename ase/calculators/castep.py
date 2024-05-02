@@ -899,9 +899,6 @@ End CASTEP Interface Documentation
             castep_file = out.name
             _close = False
 
-        if self._seed is None:
-            self._seed = os.path.splitext(os.path.basename(castep_file))[0]
-
         err_file = f'{self._seed}.0001.err'
         if os.path.exists(err_file):
             err_file = paropen(err_file)
@@ -1411,6 +1408,9 @@ End CASTEP Interface Documentation
         self.prepare_input_files(atoms, force_write=self._force_write)
         if not self._prepare_input_only:
             self.run()
+            if self._seed is None:
+                basename = os.path.basename(self._castep_file)
+                self._seed = os.path.splitext(basename)[0]
             self.read()
 
             # we need to push the old state here!
