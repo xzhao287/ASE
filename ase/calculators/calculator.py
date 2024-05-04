@@ -997,7 +997,7 @@ class FileIORules:
 @dataclass
 class StandardProfile:
     binary: str
-    command: List[str]
+    command: str
     configvars: Dict[str, Any] = field(default_factory=dict)
 
     def execute(self, calc):
@@ -1011,6 +1011,10 @@ class StandardProfile:
 
     def execute_nonblocking(self, calc):
         return self._call(calc, subprocess.Popen)
+
+    def _argv(self):
+        import shlex
+        return shlex.split(self.command)
 
     def _call(self, calc, subprocess_function):
         from contextlib import ExitStack
@@ -1031,7 +1035,7 @@ class StandardProfile:
             stdout_fd = _maybe_open(fileio_rules.stdout_name, 'wb')
             stdin_fd = _maybe_open(fileio_rules.stdin_name, 'rb')
 
-            argv = [*self.command, *fileio_rules.extend_argv]
+            argv = [*self._argv(), *fileio_rules.extend_argv]
             argv = [arg.format(prefix=calc.prefix) for arg in argv]
             return subprocess_function(
                 argv, cwd=directory,
@@ -1097,7 +1101,6 @@ class FileIOCalculator(Calculator):
 
     @classmethod
     def load_argv_profile(cls, cfg, section_name):
-        import shlex
         from ase.calculators.genericfileio import BadConfiguration
         # XXX BadConfiguration class should be moved
 
@@ -1119,7 +1122,7 @@ class FileIOCalculator(Calculator):
             raise BadConfiguration(
                 f'No binary field in {section_name!r} section')
 
-        command = shlex.split(section.get('command', binary))
+        command = section.get('command', binary)
         return StandardProfile(binary, command, configvars)
 
     def _initialize_profile(self, command):
