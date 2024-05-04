@@ -22,13 +22,18 @@ class BaseProfile(ABC):
         """
         self.binary = binary
         if command is None:
-            command = [binary]
+            command = binary
         self.command = command
 
         if parallel_info is None:
             parallel_info = {}
 
         self.parallel_info = parallel_info
+
+    def _argv(self):
+        import shlex
+        assert isinstance(self.command, str)
+        return shlex.split(self.command)
 
     def get_command(self, inputfile, calc_command=None) -> List[str]:
         """
@@ -45,10 +50,9 @@ class BaseProfile(ABC):
             The command to run.
         """
         if 'binary' not in self.parallel_info:
-            assert not isinstance(self.command, str)
             if calc_command is None:
                 calc_command = self.get_calculator_command(inputfile)
-            return [*self.command, *calc_command]
+            return [*self._argv(), *calc_command]
 
         command = [self.parallel_info['binary']]
 
@@ -86,7 +90,6 @@ class BaseProfile(ABC):
         list of str
             The command to run.
         """
-        ...
 
     def run(
         self, directory: Path, inputfile: Optional[str],
@@ -134,20 +137,17 @@ class BaseProfile(ABC):
 
     @abstractmethod
     def version(self):
-        """
-        Get the version of the code.
+        """Get the version of the code.
 
         Returns
         -------
         str
             The version of the code.
         """
-        ...
 
     @classmethod
     def from_config(cls, cfg, section_name, parallel_info=None):
-        """
-        Create a profile from a configuration file.
+        """Create a profile from a configuration file.
 
         Parameters
         ----------
@@ -162,8 +162,6 @@ class BaseProfile(ABC):
         BaseProfile
             The profile object.
         """
-        import shlex
-
         try:
             parallel_config = dict(cfg.parser['parallel'])
         except KeyError:
@@ -176,9 +174,9 @@ class BaseProfile(ABC):
         binary = section['binary']
 
         if 'command' in section:
-            command = shlex.split(section['command'])
+            command = section['command']
         else:
-            command = [binary]
+            command = binary
 
         kwargs = {
             varname: section[varname]
