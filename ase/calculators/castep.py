@@ -840,6 +840,7 @@ End CASTEP Interface Documentation
         for k, v in parameters_header.items():
             setattr(self.param, k, v)
 
+        results = {}
         while True:
             # TODO: add a switch if we have a geometry optimization: record
             # atoms objects for intermediate steps.
@@ -898,30 +899,30 @@ End CASTEP Interface Documentation
 
                 elif 'Final energy' in line:
                     key = 'energy_without_dispersion_correction'
-                    self.results[key] = float(line.split()[-2])
+                    results[key] = float(line.split()[-2])
                 elif 'Final free energy' in line:
                     key = 'free_energy_without_dispersion_correction'
-                    self.results[key] = float(line.split()[-2])
+                    results[key] = float(line.split()[-2])
                 elif 'NB est. 0K energy' in line:
                     key = 'energy_zero_without_dispersion_correction'
-                    self.results[key] = float(line.split()[-2])
+                    results[key] = float(line.split()[-2])
 
                 # Add support for dispersion correction
                 # filtering due to SEDC is done in get_potential_energy
                 elif 'Dispersion corrected final energy' in line:
                     key = 'energy_with_dispersion_correlation'
-                    self.results[key] = float(line.split()[-2])
+                    results[key] = float(line.split()[-2])
                 elif 'Dispersion corrected final free energy' in line:
                     key = 'free_energy_with_dispersion_correlation'
-                    self.results[key] = float(line.split()[-2])
+                    results[key] = float(line.split()[-2])
                 elif 'NB dispersion corrected est. 0K energy' in line:
                     key = 'energy_zero_with_dispersion_correlation'
-                    self.results[key] = float(line.split()[-2])
+                    results[key] = float(line.split()[-2])
 
                 # check if we had a finite basis set correction
                 elif 'Total energy corrected for finite basis set' in line:
                     key = 'energy_with_finite_basis_set_correction'
-                    self.results[key] = float(line.split()[-2])
+                    results[key] = float(line.split()[-2])
 
                 # ******************** Forces *********************
                 # ************** Symmetrised Forces ***************
@@ -929,12 +930,12 @@ End CASTEP Interface Documentation
                 # ******************* Unconstrained Forces *******************
                 elif re.search(r'\**.* Forces \**', line):
                     forces, constraints = _read_forces(out, n_atoms)
-                    self.results['forces'] = np.array(forces)
+                    results['forces'] = np.array(forces)
 
                 # ***************** Stress Tensor *****************
                 # *********** Symmetrised Stress Tensor ***********
                 elif re.search(r'\**.* Stress Tensor \**', line):
-                    self.results.update(_read_stress(out))
+                    results.update(_read_stress(out))
 
                 elif ('BFGS: starting iteration' in line
                       or 'BFGS: improving iteration' in line):
@@ -951,18 +952,18 @@ End CASTEP Interface Documentation
                     species = []
                     positions_frac = []
 
-                    self.results = {}
+                    results = {}
 
                 # extract info from the Mulliken analysis
                 elif 'Atomic Populations' in line:
-                    self.results.update(_read_mulliken_charges(out))
+                    results.update(_read_mulliken_charges(out))
 
                 # extract detailed Hirshfeld analysis (iprint > 1)
                 elif 'Hirshfeld total electronic charge (e)' in line:
-                    self.results.update(_read_hirshfeld_details(out, n_atoms))
+                    results.update(_read_hirshfeld_details(out, n_atoms))
 
                 elif 'Hirshfeld Analysis' in line:
-                    self.results.update(_read_hirshfeld_charges(out))
+                    results.update(_read_hirshfeld_charges(out))
 
                 # There is actually no good reason to get out of the loop
                 # already at this point... or do I miss something?
@@ -988,7 +989,7 @@ End CASTEP Interface Documentation
         if _close:
             out.close()
 
-        _set_energy_and_free_energy(self.results)
+        _set_energy_and_free_energy(results)
 
         # in highly summetric crystals, positions and symmetry are only printed
         # upon init, hence we here restore these original values
@@ -998,6 +999,8 @@ End CASTEP Interface Documentation
             species = prev_species
 
         positions_frac_atoms = np.array(positions_frac)
+
+        self.results = results
 
         if self.atoms and not self._set_atoms:
             # compensate for internal reordering of atoms by CASTEP
