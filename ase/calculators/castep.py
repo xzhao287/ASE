@@ -514,8 +514,6 @@ End CASTEP Interface Documentation
         self._calls = 0
         self._castep_version = castep_keywords.castep_version
 
-        # collects warning from .castep files
-        self._warnings = []
         # collects content from *.err file
         self._error = None
         # warnings raised by the ASE interface
@@ -841,6 +839,7 @@ End CASTEP Interface Documentation
             setattr(self.param, k, v)
 
         results = {}
+        castep_warnings = []
         while True:
             # TODO: add a switch if we have a geometry optimization: record
             # atoms objects for intermediate steps.
@@ -970,7 +969,7 @@ End CASTEP Interface Documentation
                 # elif 'BFGS: Final Configuration:' in line:
                 #    break
                 elif 'warn' in line.lower():
-                    self._warnings.append(line)
+                    castep_warnings.append(line)
 
                 # fetch some last info
                 elif 'Total time' in line:
@@ -1050,12 +1049,10 @@ End CASTEP Interface Documentation
 
         self._kpoints = kpoints
 
-        if self._warnings:
+        if castep_warnings:
             warnings.warn(f'WARNING: {castep_file} contains warnings')
-            for warning in self._warnings:
+            for warning in castep_warnings:
                 warnings.warn(warning)
-        # reset
-        self._warnings = []
 
         # Read in eigenvalues from bands file
         bands_file = castep_file[:-7] + '.bands'
