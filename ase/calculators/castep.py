@@ -981,9 +981,8 @@ End CASTEP Interface Documentation
                     self._peak_memory = int(re.search(pattern, line).group(1))
 
             except Exception as exception:
-                sys.stderr.write(line + '|-> line triggered exception: '
-                                 + str(exception))
-                raise
+                msg = f'{line}|-> line triggered exception: {str(exception)}'
+                raise Exception(msg) from exception
 
         if _close:
             out.close()
