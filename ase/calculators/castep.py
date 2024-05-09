@@ -839,6 +839,7 @@ End CASTEP Interface Documentation
             setattr(self.param, k, v)
 
         results = {}
+        species_pot = []
         castep_warnings = []
         while True:
             # TODO: add a switch if we have a geometry optimization: record
@@ -870,9 +871,8 @@ End CASTEP Interface Documentation
                         if 'Pseudopotential generated on-the-fly' in line:
                             continue
                         fields = line.split()
-                        if (len(fields) >= 2):
-                            elem, pp_file = fields
-                            self.cell.species_pot = (elem, pp_file)
+                        if len(fields) == 2:
+                            species_pot.append(fields)
                         else:
                             break
                 elif 'k-Points For BZ Sampling' in line:
@@ -1048,6 +1048,8 @@ End CASTEP Interface Documentation
             atoms.calc = self
 
         self._kpoints = kpoints
+
+        self.cell.species_pot = species_pot
 
         if castep_warnings:
             warnings.warn(f'WARNING: {castep_file} contains warnings')
