@@ -215,7 +215,7 @@ def test_ground_state_template_write_input(
     gs_template_obj = (
         ase.calculators.exciting.exciting.ExcitingGroundStateTemplate())
     exciting_profile = ase.calculators.exciting.exciting.ExcitingProfile(
-        binary=binary_path)
+        binary=str(binary_path))
     gs_template_obj.write_input(
         profile=exciting_profile,
         directory=tmp_path,
