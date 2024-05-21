@@ -7,7 +7,7 @@ from typing import Any, Iterable, List, Mapping, Optional, Set
 
 from ase.calculators.abc import GetOutputsMixin
 from ase.calculators.calculator import (
-    BaseCalculator, EnvironmentError, _validate_command, BadConfiguration)
+    BaseCalculator, _validate_command, BadConfiguration)
 from ase.config import cfg as _cfg
 
 
