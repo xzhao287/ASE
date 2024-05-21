@@ -6,6 +6,7 @@ from abc import abstractmethod
 from dataclasses import dataclass, field
 from math import pi, sqrt
 from pathlib import Path
+import shlex
 from typing import Any, Dict, List, Optional, Sequence, Set, Union
 
 import numpy as np
@@ -994,11 +995,30 @@ class FileIORules:
         return dct
 
 
+class BadConfiguration(Exception):
+    pass
+
+
+def _validate_command(command: str) -> str:
+    # We like to store commands as strings (and call shlex.split() later),
+    # but we also like to validate them early.  This will error out if
+    # command contains syntax problems and will also normalize e.g.
+    # multiple spaces:
+    try:
+        return shlex.join(shlex.split(command))
+    except ValueError as err:
+        raise BadConfiguration('Cannot parse command string') from err
+
+
 @dataclass
 class StandardProfile:
     binary: str
     command: str
     configvars: Dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self):
+        self.binary = _validate_command(self.binary)
+        self.command = _validate_command(self.command)
 
     def execute(self, calc):
         try:
@@ -1101,9 +1121,6 @@ class FileIOCalculator(Calculator):
 
     @classmethod
     def load_argv_profile(cls, cfg, section_name):
-        from ase.calculators.genericfileio import BadConfiguration
-        # XXX BadConfiguration class should be moved
-
         # Helper method to load configuration.
         # This is used by the tests, do not rely on this as it will change.
         try:

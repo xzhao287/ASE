@@ -2,10 +2,12 @@ from abc import ABC, abstractmethod
 from contextlib import ExitStack
 from os import PathLike
 from pathlib import Path
+import shlex
 from typing import Any, Iterable, List, Mapping, Optional, Set
 
 from ase.calculators.abc import GetOutputsMixin
-from ase.calculators.calculator import BaseCalculator, EnvironmentError
+from ase.calculators.calculator import (
+    BaseCalculator, EnvironmentError, _validate_command, BadConfiguration)
 from ase.config import cfg as _cfg
 
 
@@ -20,10 +22,10 @@ class BaseProfile(ABC):
             Additional settings for parallel execution, e.g. arguments
             for the binary for parallelization (mpiexec, srun, mpirun).
         """
-        self.binary = binary
+        self.binary = _validate_command(binary)
         if command is None:
-            command = binary
-        self.command = command
+            command = self.binary
+        self.command = _validate_command(command)
 
         if parallel_info is None:
             parallel_info = {}
@@ -31,7 +33,6 @@ class BaseProfile(ABC):
         self.parallel_info = parallel_info
 
     def _argv(self):
-        import shlex
         assert isinstance(self.command, str)
         return shlex.split(self.command)
 
@@ -192,10 +193,6 @@ class BaseProfile(ABC):
             raise BadConfiguration(*err.args)
 
 
-class BadConfiguration(Exception):
-    pass
-
-
 def read_stdout(args, createfile=None):
     """Run command in tempdir and return standard output.
 
@@ -329,14 +326,14 @@ class GenericFileIOCalculator(BaseCalculator, GetOutputsMixin):
         self.template = template
         if profile is None:
             if template.name not in self.cfg.parser:
-                raise EnvironmentError(f'No configuration of {template.name}')
+                raise BadConfiguration(f'No configuration of {template.name}')
             try:
                 profile = template.load_profile(
                     self.cfg, parallel_info=parallel_info,
                 )
             except Exception as err:
                 configvars = self.cfg.as_dict()
-                raise EnvironmentError(
+                raise BadConfiguration(
                     f'Failed to load section [{template.name}] '
                     f'from configuration: {configvars}'
                 ) from err

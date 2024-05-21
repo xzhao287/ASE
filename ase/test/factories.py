@@ -661,7 +661,7 @@ class Factories:
         factories = {}
         why_not = {}
 
-        from ase.calculators.genericfileio import BadConfiguration
+        from ase.calculators.calculator import BadConfiguration
         for name, cls in factory_classes.items():
             try:
                 factories[name] = cls(cfg)

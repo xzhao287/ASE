@@ -11,7 +11,7 @@ import os
 import numpy as np
 
 from ase.calculators.calculator import (FileIOCalculator, kpts2ndarray,
-                                        kpts2sizeandoffsets)
+                                        kpts2sizeandoffsets, BadConfiguration)
 from ase.units import Bohr, Hartree
 
 
@@ -95,7 +95,6 @@ class Dftb(FileIOCalculator):
                 command = self.cfg['DFTB_COMMAND'] + ' > PREFIX.out'
 
         if command is None and profile is None:
-            from ase.calculators.genericfileio import BadConfiguration
             try:
                 profile = self.load_argv_profile(self.cfg, 'dftb')
             except BadConfiguration:
