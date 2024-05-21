@@ -32,8 +32,12 @@ class BaseProfile(ABC):
 
         self.parallel_info = parallel_info
 
-    def _argv(self):
-        assert isinstance(self.command, str)
+    @property
+    def _split_binary(self):
+        return shlex.split(self.binary)
+
+    @property
+    def _split_command(self):
         return shlex.split(self.command)
 
     def get_command(self, inputfile, calc_command=None) -> List[str]:
@@ -53,8 +57,9 @@ class BaseProfile(ABC):
         if 'binary' not in self.parallel_info:
             if calc_command is None:
                 calc_command = self.get_calculator_command(inputfile)
-            return [*self._argv(), *calc_command]
+            return [*self._split_command, *calc_command]
 
+        # (This way to handle parallel info will change.)
         command = [self.parallel_info['binary']]
 
         for key, value in self.parallel_info.items():
@@ -69,7 +74,7 @@ class BaseProfile(ABC):
             elif value:
                 command.append(f'{command_key}')
 
-        command.append(self.binary)
+        command += self._split_binary
 
         if calc_command is None:
             command.extend(self.get_calculator_command(inputfile))

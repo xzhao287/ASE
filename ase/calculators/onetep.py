@@ -35,7 +35,7 @@ class OnetepProfile(BaseProfile):
         super().__init__(binary, **kwargs)
 
     def version(self):
-        lines = read_stdout(self.binary)
+        lines = read_stdout(self._split_binary)
         return self.parse_version(lines)
 
     def parse_version(lines):

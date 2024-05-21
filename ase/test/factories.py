@@ -226,7 +226,7 @@ class DFTBFactory:
         self.profile = Dftb.load_argv_profile(cfg, 'dftb')
 
     def version(self):
-        stdout = read_stdout(self.profile.binary)
+        stdout = read_stdout(self.profile._split_binary)
         match = re.search(r'DFTB\+ release\s*(\S+)', stdout, re.M)
         return match.group(1)
 
@@ -258,7 +258,7 @@ class ElkFactory:
         self.species_dir = cfg.parser['elk']['species_dir']
 
     def version(self):
-        output = read_stdout(self.profile.binary)
+        output = read_stdout(self.profile._split_binary)
         match = re.search(r'Elk code version (\S+)', output, re.M)
         return match.group(1)
 
@@ -552,7 +552,7 @@ class SiestaFactory:
     def version(self):
         from ase.calculators.siesta.siesta import get_siesta_version
 
-        full_ver = get_siesta_version(self.profile.binary)
+        full_ver = get_siesta_version(self.profile._split_binary)
         m = re.match(r'siesta-(\S+)', full_ver, flags=re.I)
         if m:
             return m.group(1)
@@ -579,7 +579,8 @@ class NWChemFactory:
         self.profile = NWChem.load_argv_profile(cfg, 'nwchem')
 
     def version(self):
-        stdout = read_stdout(self.profile.binary, createfile='nwchem.nw')
+        stdout = read_stdout(self.profile._split_binary,
+                             createfile='nwchem.nw')
         match = re.search(
             r'Northwest Computational Chemistry Package \(NWChem\) (\S+)',
             stdout,

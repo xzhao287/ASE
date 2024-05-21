@@ -1032,9 +1032,15 @@ class StandardProfile:
     def execute_nonblocking(self, calc):
         return self._call(calc, subprocess.Popen)
 
-    def _argv(self):
-        import shlex
+    @property
+    def _split_command(self):
+        # XXX Unduplicate common stuff between StandardProfile and
+        # that of GenericFileIO
         return shlex.split(self.command)
+
+    @property
+    def _split_binary(self):
+        return shlex.split(self.binary)
 
     def _call(self, calc, subprocess_function):
         from contextlib import ExitStack
@@ -1055,7 +1061,7 @@ class StandardProfile:
             stdout_fd = _maybe_open(fileio_rules.stdout_name, 'wb')
             stdin_fd = _maybe_open(fileio_rules.stdin_name, 'rb')
 
-            argv = [*self._argv(), *fileio_rules.extend_argv]
+            argv = [*self._split_command, *fileio_rules.extend_argv]
             argv = [arg.format(prefix=calc.prefix) for arg in argv]
             return subprocess_function(
                 argv, cwd=directory,

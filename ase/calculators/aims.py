@@ -34,7 +34,7 @@ class AimsProfile(BaseProfile):
         return []
 
     def version(self):
-        return get_aims_version(read_stdout(self.binary))
+        return get_aims_version(read_stdout(self._split_binary))
 
 
 class AimsTemplate(CalculatorTemplate):

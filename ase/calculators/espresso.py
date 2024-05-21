@@ -45,7 +45,7 @@ class EspressoProfile(BaseProfile):
 
     def version(self):
         try:
-            stdout = read_stdout(self.binary)
+            stdout = read_stdout(self._split_binary)
             return self.parse_version(stdout)
         except FileNotFoundError:
             warnings.warn(

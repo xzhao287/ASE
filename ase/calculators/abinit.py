@@ -26,7 +26,7 @@ class AbinitProfile(BaseProfile):
         self.pp_paths = pp_paths
 
     def version(self):
-        argv = [self.binary, '--version']
+        argv = [*self._split_binary, '--version']
         return check_output(argv, encoding='ascii').strip()
 
     def get_calculator_command(self, inputfile):
