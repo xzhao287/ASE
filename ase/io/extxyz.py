@@ -45,10 +45,14 @@ UNPROCESSED_KEYS = {'uid'}
 
 SPECIAL_3_3_KEYS = {'Lattice', 'virial', 'stress'}
 
-# select subset of properties that are not per-atom
-per_config_properties = [key for key, val in all_outputs.items()
-                         if not (isinstance(val, ArrayProperty) and
-                                 val.shapespec[0] == 'natoms')]
+# 'per-atom' and 'per-config'
+per_atom_properties = []
+per_config_properties = []
+for key, val in all_outputs.items():
+    if isinstance(val, ArrayProperty) and val.shapespec[0] == 'natoms':
+        per_atom_properties.append(key)
+    else:
+        per_config_properties.append(key)
 
 
 def key_val_str_to_dict(string, sep=None):
@@ -975,7 +979,7 @@ def save_calc_results(atoms, calc=None, calc_prefix=None,
     for prop, value in calc_use.results.items():
         if prop in per_config_properties:
             per_config_results[calc_prefix + prop] = value
-        else:
+        elif prop in per_atom_properties:
             per_atom_results[calc_prefix + prop] = value
 
     if not force:
