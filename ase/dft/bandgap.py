@@ -49,7 +49,7 @@ class GapInfo:
         """Whether the direct and indirect gaps are the same transition."""
         return self._gapinfo[1:] == self._direct_gapinfo[1:]
 
-    def description(self, *, ibz_k_points=None) -> str:
+    def description(self, *, ibz_kpoints=None) -> str:
         """Print human-friendly description of direct/indirect gap.
 
         If ibz_k_points are given, coordinates are printed as well."""
@@ -60,9 +60,9 @@ class GapInfo:
         def skn(skn):
             """Convert k-point indices (s, k, n) to string."""
             description = 's={}, k={}, n={}'.format(*skn)
-            if ibz_k_points is not None:
+            if ibz_kpoints is not None:
                 coordtxt = '[{:.2f}, {:.2f}, {:.2f}]'.format(
-                    *ibz_k_points[skn[1]])
+                    *ibz_kpoints[skn[1]])
                 description = f'{description}, [{coordtxt}]'
             return f'({description})'
 
