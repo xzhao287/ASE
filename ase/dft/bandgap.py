@@ -15,7 +15,6 @@ def get_band_gap(calc, direct=False, spin=None):
 
 @dataclass
 class GapInfo:
-    ibz_k_points: np.ndarray
     eigenvalues: np.ndarray
 
     def __post_init__(self):
@@ -33,7 +32,7 @@ class GapInfo:
                                 for s in range(ns)])
 
         efermi = calc.get_fermi_level()
-        return cls(calc.get_ibz_k_points(), eigenvalues - efermi)
+        return cls(eigenvalues - efermi)
 
     def gap(self):
         return self._gapinfo
@@ -50,14 +49,22 @@ class GapInfo:
         """Whether the direct and indirect gaps are the same transition."""
         return self._gapinfo[1:] == self._direct_gapinfo[1:]
 
-    def description(self) -> str:
+    def description(self, *, ibz_k_points=None) -> str:
+        """Print human-friendly description of direct/indirect gap.
+
+        If ibz_k_points are given, coordinates are printed as well."""
+
         lines = []
         add = lines.append
 
         def skn(skn):
-            """Convert k or (s, k) to string."""
-            return '(s={}, k={}, n={}, [{:.2f}, {:.2f}, {:.2f}])'.format(
-                *skn, *self.ibz_k_points[skn[1]])
+            """Convert k-point indices (s, k, n) to string."""
+            description = 's={}, k={}, n={}'.format(*skn)
+            if ibz_k_points is not None:
+                coordtxt = '[{:.2f}, {:.2f}, {:.2f}]'.format(
+                    *ibz_k_points[skn[1]])
+                description = f'{description}, [{coordtxt}]'
+            return f'({description})'
 
         gap, skn1, skn2 = self.gap()
         direct_gap, skn_direct1, skn_direct2 = self.direct_gap()
@@ -126,7 +133,7 @@ def bandgap(calc=None, direct=False, spin=None, eigenvalues=None, efermi=None,
 
     efermi = efermi or 0.0
 
-    gapinfo = GapInfo(kpts, eigenvalues - efermi)
+    gapinfo = GapInfo(eigenvalues - efermi)
 
     e_skn = gapinfo.eigenvalues
     if eigenvalues.ndim == 2:
