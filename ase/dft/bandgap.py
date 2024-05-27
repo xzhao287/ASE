@@ -90,8 +90,14 @@ class GapInfo:
         return '\n'.join(lines)
 
 
-def bandgap(calc=None, direct=False, spin=None, eigenvalues=None, efermi=None,
-            output=None, kpts=None):
+spin_error = (
+    'The spin keyword is no longer supported.  Please call the function '
+    'with the energies corresponding to the desired spins.')
+_deprecated = object()
+
+
+def bandgap(calc=None, direct=False, spin=_deprecated,
+            eigenvalues=None, efermi=None, kpts=None):
     """Calculates the band-gap.
 
     Parameters:
@@ -121,6 +127,9 @@ def bandgap(calc=None, direct=False, spin=None, eigenvalues=None, efermi=None,
     3.4 (0, 0, 3), (0, 0, 4)
     """
 
+    if spin is not _deprecated:
+        raise RuntimeError(spin_error)
+
     if calc:
         kpts = calc.get_ibz_k_points()
         nk = len(kpts)
@@ -142,7 +151,7 @@ def bandgap(calc=None, direct=False, spin=None, eigenvalues=None, efermi=None,
     if not np.isfinite(e_skn).all():
         raise ValueError('Bad eigenvalues!')
 
-    gap, (s1, k1, n1), (s2, k2, n2) = _bandgap(e_skn, spin, direct)
+    gap, (s1, k1, n1), (s2, k2, n2) = _bandgap(e_skn, None, direct)
 
     if eigenvalues.ndim != 3:
         p1 = (k1, n1)
