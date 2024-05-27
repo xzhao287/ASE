@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+from functools import cached_property
 import warnings
 
 import numpy as np
@@ -12,6 +14,77 @@ def get_band_gap(calc, direct=False, spin=None):
     return gap, k1, k2
 
 
+@dataclass
+class GapInfo:
+    ibz_k_points: np.ndarray
+    eigenvalues: np.ndarray
+
+    def __post_init__(self):
+        self._gapinfo = _bandgap(self.eigenvalues, spin=None, direct=False)
+        self._direct_gapinfo = _bandgap(self.eigenvalues, spin=None,
+                                        direct=True)
+
+    @classmethod
+    def fromcalc(cls, calc):
+        kpts = calc.get_ibz_k_points()
+        nk = len(kpts)
+        ns = calc.get_number_of_spins()
+        eigenvalues = np.array([[calc.get_eigenvalues(kpt=k, spin=s)
+                                 for k in range(nk)]
+                                for s in range(ns)])
+
+        efermi = calc.get_fermi_level()
+        return cls(calc.get_ibz_k_points(), eigenvalues - efermi)
+
+    def gap(self):
+        return self._gapinfo
+
+    def direct_gap(self):
+        return self._direct_gapinfo
+
+    @property
+    def is_metallic(self) -> bool:
+        return self._gapinfo[0] == 0.0
+
+    @property
+    def gap_is_direct(self) -> bool:
+        """Whether the direct and indirect gaps are the same transition."""
+        return self._gapinfo[1:] == self._direct_gapinfo[1:]
+
+    def description(self) -> str:
+        lines = []
+        add = lines.append
+
+        def skn(skn):
+            """Convert k or (s, k) to string."""
+            return '(s={}, k={}, n={}, [{:.2f}, {:.2f}, {:.2f}])'.format(
+                *skn, *self.ibz_k_points[skn[1]])
+
+        gap, skn1, skn2 = self.gap()
+        direct_gap, skn_direct1, skn_direct2 = self.direct_gap()
+        is_direct = (skn1 == skn2)
+
+        if self.is_metallic:
+            add('No gap')
+        else:
+            add(f'Gap: {gap:.3f} eV')
+            add('Transition (v -> c):')
+            add(f'  {skn(skn1)} -> {skn(skn2)}')
+
+        if self.gap_is_direct:
+            add('No difference between direct/indirect transitions')
+        else:
+            add('Direct/indirect transitions are different')
+            add(f'Direct gap: {direct_gap:.3f} eV')
+            if skn1[0] == skn1[0]:
+                add(f'Transition at: {skn(skn1)}')
+            else:
+                transition = skn((f'{skn1[0]}->{skn2[0]}', *skn1[1:]))
+                add(f'Transition at: {transition}')
+
+        return '\n'.join(lines)
+
+
 def bandgap(calc=None, direct=False, spin=None, eigenvalues=None, efermi=None,
             output=None, kpts=None):
     """Calculates the band-gap.
@@ -24,7 +97,7 @@ def bandgap(calc=None, direct=False, spin=None, eigenvalues=None, efermi=None,
         Calculate direct band-gap.
     spin: int or None
         For spin-polarized systems, you can use spin=0 or spin=1 to look only
-        at a single spin-channel.
+       at a single spin-channel.
     eigenvalues: ndarray of shape (nspin, nkpt, nband) or (nkpt, nband)
         Eigenvalues.
     efermi: float
@@ -36,14 +109,9 @@ def bandgap(calc=None, direct=False, spin=None, eigenvalues=None, efermi=None,
     Example:
 
     >>> gap, p1, p2 = bandgap(silicon.calc)
-    Gap: 1.2 eV
-    Transition (v -> c):
-        [0.000, 0.000, 0.000] -> [0.500, 0.500, 0.000]
     >>> print(gap, p1, p2)
     1.2 (0, 0, 3), (0, 5, 4)
     >>> gap, p1, p2 = bandgap(silicon.calc, direct=True)
-    Direct gap: 3.4 eV
-    Transition at: [0.000, 0.000, 0.000]
     >>> print(gap, p1, p2)
     3.4 (0, 0, 3), (0, 0, 4)
     """
@@ -60,7 +128,9 @@ def bandgap(calc=None, direct=False, spin=None, eigenvalues=None, efermi=None,
 
     efermi = efermi or 0.0
 
-    e_skn = eigenvalues - efermi
+    gapinfo = GapInfo(kpts, eigenvalues - efermi)
+
+    e_skn = gapinfo.eigenvalues
     if eigenvalues.ndim == 2:
         e_skn = e_skn[np.newaxis]  # spinors
 
