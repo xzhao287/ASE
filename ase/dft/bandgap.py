@@ -151,7 +151,7 @@ def bandgap(calc=None, direct=False, spin=_deprecated,
     if not np.isfinite(e_skn).all():
         raise ValueError('Bad eigenvalues!')
 
-    gap, (s1, k1, n1), (s2, k2, n2) = _bandgap(e_skn, None, direct)
+    gap, (s1, k1, n1), (s2, k2, n2) = _bandgap(e_skn, direct)
 
     if eigenvalues.ndim != 3:
         p1 = (k1, n1)
@@ -163,7 +163,7 @@ def bandgap(calc=None, direct=False, spin=_deprecated,
     return gap, p1, p2
 
 
-def _bandgap(e_skn, spin, direct):
+def _bandgap(e_skn, direct):
     """Helper function."""
     ns, nk, nb = e_skn.shape
     s1 = s2 = k1 = k2 = n1 = n2 = None
@@ -174,11 +174,9 @@ def _bandgap(e_skn, spin, direct):
     if ns == 1:
         if np.ptp(N_sk[0]) > 0:
             return 0.0, (None, None, None), (None, None, None)
-    elif spin is None:
+    else:
         if (np.ptp(N_sk, axis=1) > 0).any():
             return 0.0, (None, None, None), (None, None, None)
-    elif np.ptp(N_sk[spin]) > 0:
-        return 0.0, (None, None, None), (None, None, None)
 
     if (N_sk == 0).any() or (N_sk == nb).any():
         raise ValueError('Too few bands!')
@@ -197,31 +195,23 @@ def _bandgap(e_skn, spin, direct):
         n2 = n1 + 1
         return gap, (0, k1, n1), (0, k2, n2)
 
-    if spin is None:
-        gap, k1, k2 = find_gap(ev_sk.ravel(), ec_sk.ravel(), direct)
-        if direct:
-            # Check also spin flips:
-            for s in [0, 1]:
-                g, k, _ = find_gap(ev_sk[s], ec_sk[1 - s], direct)
-                if g < gap:
-                    gap = g
-                    k1 = k + nk * s
-                    k2 = k + nk * (1 - s)
+    gap, k1, k2 = find_gap(ev_sk.ravel(), ec_sk.ravel(), direct)
+    if direct:
+        # Check also spin flips:
+        for s in [0, 1]:
+            g, k, _ = find_gap(ev_sk[s], ec_sk[1 - s], direct)
+            if g < gap:
+                gap = g
+                k1 = k + nk * s
+                k2 = k + nk * (1 - s)
 
-        if gap > 0.0:
-            s1, k1 = divmod(k1, nk)
-            s2, k2 = divmod(k2, nk)
-            n1 = N_sk[s1, k1] - 1
-            n2 = N_sk[s2, k2]
-            return gap, (s1, k1, n1), (s2, k2, n2)
-        return 0.0, (None, None, None), (None, None, None)
-
-    gap, k1, k2 = find_gap(ev_sk[spin], ec_sk[spin], direct)
-    s1 = spin
-    s2 = spin
-    n1 = N_sk[s1, k1] - 1
-    n2 = n1 + 1
-    return gap, (s1, k1, n1), (s2, k2, n2)
+    if gap > 0.0:
+        s1, k1 = divmod(k1, nk)
+        s2, k2 = divmod(k2, nk)
+        n1 = N_sk[s1, k1] - 1
+        n2 = N_sk[s2, k2]
+        return gap, (s1, k1, n1), (s2, k2, n2)
+    return 0.0, (None, None, None), (None, None, None)
 
 
 def find_gap(ev_k, ec_k, direct):
