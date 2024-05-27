@@ -50,7 +50,7 @@ class GapInfo:
         return self._gapinfo[1:] == self._direct_gapinfo[1:]
 
     def description(self, *, ibz_kpoints=None) -> str:
-        """Print human-friendly description of direct/indirect gap.
+        """Return human-friendly description of direct/indirect gap.
 
         If ibz_k_points are given, coordinates are printed as well."""
 
