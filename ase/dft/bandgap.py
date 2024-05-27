@@ -97,7 +97,7 @@ class GapInfo:
 
 
 def bandgap(calc=None, direct=False, spin=_deprecated,
-            eigenvalues=None, efermi=None, kpts=None):
+            eigenvalues=None, efermi=None, output=None, kpts=None):
     """Calculates the band-gap.
 
     Parameters:
