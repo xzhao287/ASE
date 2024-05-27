@@ -95,7 +95,7 @@ def bandgap(calc=None, direct=False, spin=None, eigenvalues=None, efermi=None,
         Calculate direct band-gap.
     spin: int or None
         For spin-polarized systems, you can use spin=0 or spin=1 to look only
-       at a single spin-channel.
+        at a single spin-channel.
     eigenvalues: ndarray of shape (nspin, nkpt, nband) or (nkpt, nband)
         Eigenvalues.
     efermi: float
