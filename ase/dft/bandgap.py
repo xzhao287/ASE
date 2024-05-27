@@ -4,11 +4,17 @@ import warnings
 import numpy as np
 
 
-def get_band_gap(calc, direct=False, spin=None):
+spin_error = (
+    'The spin keyword is no longer supported.  Please call the function '
+    'with the energies corresponding to the desired spins.')
+_deprecated = object()
+
+
+def get_band_gap(calc, direct=False, spin=_deprecated):
     warnings.warn('Please use ase.dft.bandgap.bandgap() instead!')
-    gap, (s1, k1, n1), (s2, k2, n2) = bandgap(calc, direct, spin)
+    gap, (s1, k1, n1), (s2, k2, n2) = bandgap(calc, direct, spin=spin)
     ns = calc.get_number_of_spins()
-    if ns == 2 and spin is None:
+    if ns == 2:
         return gap, (s1, k1), (s2, k2)
     return gap, k1, k2
 
@@ -18,9 +24,8 @@ class GapInfo:
     eigenvalues: np.ndarray
 
     def __post_init__(self):
-        self._gapinfo = _bandgap(self.eigenvalues, spin=None, direct=False)
-        self._direct_gapinfo = _bandgap(self.eigenvalues, spin=None,
-                                        direct=True)
+        self._gapinfo = _bandgap(self.eigenvalues, direct=False)
+        self._direct_gapinfo = _bandgap(self.eigenvalues, direct=True)
 
     @classmethod
     def fromcalc(cls, calc):
@@ -90,12 +95,6 @@ class GapInfo:
         return '\n'.join(lines)
 
 
-spin_error = (
-    'The spin keyword is no longer supported.  Please call the function '
-    'with the energies corresponding to the desired spins.')
-_deprecated = object()
-
-
 def bandgap(calc=None, direct=False, spin=_deprecated,
             eigenvalues=None, efermi=None, kpts=None):
     """Calculates the band-gap.
@@ -106,9 +105,6 @@ def bandgap(calc=None, direct=False, spin=_deprecated,
         Electronic structure calculator object.
     direct: bool
         Calculate direct band-gap.
-    spin: int or None
-        For spin-polarized systems, you can use spin=0 or spin=1 to look only
-        at a single spin-channel.
     eigenvalues: ndarray of shape (nspin, nkpt, nband) or (nkpt, nband)
         Eigenvalues.
     efermi: float
