@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from functools import cached_property
 import warnings
 
 import numpy as np
@@ -62,7 +61,6 @@ class GapInfo:
 
         gap, skn1, skn2 = self.gap()
         direct_gap, skn_direct1, skn_direct2 = self.direct_gap()
-        is_direct = (skn1 == skn2)
 
         if self.is_metallic:
             add('No gap')
