@@ -87,10 +87,11 @@ class GapInfo:
         else:
             add('Direct/indirect transitions are different')
             add(f'Direct gap: {direct_gap:.3f} eV')
-            if skn1[0] == skn1[0]:
-                add(f'Transition at: {skn(skn1)}')
+            if skn_direct1[0] == skn_direct2[0]:
+                add(f'Transition at: {skn(skn_direct1)}')
             else:
-                transition = skn((f'{skn1[0]}->{skn2[0]}', *skn1[1:]))
+                transition = skn((f'{skn_direct1[0]}->{skn_direct2[0]}',
+                                  *skn_direct1[1:]))
                 add(f'Transition at: {transition}')
 
         return '\n'.join(lines)
