@@ -3,9 +3,7 @@ import sys
 
 import sphinx_rtd_theme
 
-sys.path.append('.')
-
-extensions = ['ext',
+extensions = ['ase.utils.sphinx',
               'sphinx.ext.autodoc',
               'sphinx.ext.doctest',
               'sphinx.ext.extlinks',

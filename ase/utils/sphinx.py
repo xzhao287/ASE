@@ -65,6 +65,18 @@ def git_role_tmpl(urlroot,
     return [node], []
 
 
+def git_role(role, rawtext, text, lineno, inliner, options={}, content=[]):
+    return git_role_tmpl('https://gitlab.com/ase/ase/blob/master/',
+                         role,
+                         rawtext, text, lineno, inliner, options, content)
+
+
+def setup(app):
+    app.add_role('mol', mol_role)
+    app.add_role('git', git_role)
+    create_png_files()
+
+
 def creates():
     """Generator for Python scripts and their output filenames."""
     for dirpath, dirnames, filenames in sorted(os.walk('.')):
