@@ -8,7 +8,6 @@ from pathlib import Path
 from stat import ST_MTIME
 from subprocess import DEVNULL, CalledProcessError, check_call
 
-import matplotlib
 from docutils import nodes
 from docutils.parsers.rst.roles import set_classes
 
