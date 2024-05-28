@@ -34,7 +34,7 @@ def test_run_command(
     mock_config.parser.update({
         "parallel": {"binary": "mpirun"},
         "dummy": {
-            "binary": "dummy.x",
+            "command": "dummy.x",
         },
     })
 
