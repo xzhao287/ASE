@@ -95,15 +95,8 @@ pseudo_path = {path}/siesta
         # configuration since that may be using other pseudopotentials
         # than the ones we want.  Therefore, we override datafile paths.
         cfg = Config.read()
-
-        #for name in factory_classes:
-            #if name in cfg.parser:
-                # XXX It would be nice if we could avoid triggering MPI
-                # during the tests.
-                #section = cfg.parser[name]
-                #if 'binary' in section:
-                #    section['command'] = section['binary']
-
+        # XXX It would be nice if we could avoid triggering MPI,
+        # e.g. by hacking the way commands are handled.
         cfg.parser.read_string(self.datafile_config)
         return cfg
 

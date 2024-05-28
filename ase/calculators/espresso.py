@@ -155,15 +155,11 @@ class Espresso(GenericFileIOCalculator):
             raise RuntimeError(compatibility_msg)
 
         if label is not self._deprecated:
-            import warnings
-
             warnings.warn(
                 'Ignoring label, please use directory instead', FutureWarning
             )
 
         if 'ASE_ESPRESSO_COMMAND' in os.environ and profile is None:
-            import warnings
-
             warnings.warn(compatibility_msg, FutureWarning)
 
         template = EspressoTemplate()
