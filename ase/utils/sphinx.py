@@ -12,8 +12,6 @@ import matplotlib
 from docutils import nodes
 from docutils.parsers.rst.roles import set_classes
 
-matplotlib.use('Agg')
-
 
 def mol_role(role, rawtext, text, lineno, inliner, options={}, content=[]):
     n = []
