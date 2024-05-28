@@ -19,12 +19,12 @@ class OnetepProfile(BaseProfile):
     now deprecated "ASE_ONETEP_COMMAND".
     """
 
-    def __init__(self, binary, **kwargs):
+    def __init__(self, command, **kwargs):
         """
         Parameters
         ----------
-        binary: str
-            Path to the ONETEP binary.
+        command: str
+            The onetep command (not including inputfile).
         old: bool
             If True, will use the old ASE_ONETEP_COMMAND
             interface.
@@ -32,10 +32,10 @@ class OnetepProfile(BaseProfile):
             Additional kwargs are passed to the BaseProfile
             class.
         """
-        super().__init__(binary, **kwargs)
+        super().__init__(command, **kwargs)
 
     def version(self):
-        lines = read_stdout(self._split_binary)
+        lines = read_stdout(self._split_command)
         return self.parse_version(lines)
 
     def parse_version(lines):

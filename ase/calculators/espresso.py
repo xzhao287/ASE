@@ -44,14 +44,8 @@ class EspressoProfile(BaseProfile):
         return match.group(1)
 
     def version(self):
-        try:
-            stdout = read_stdout(self._split_command)
-            return self.parse_version(stdout)
-        except FileNotFoundError:
-            warnings.warn(
-                f'The executable {self.binary} is not found on the path'
-            )
-            return None
+        stdout = read_stdout(self._split_command)
+        return self.parse_version(stdout)
 
     def get_calculator_command(self, inputfile):
         return ['-in', inputfile]

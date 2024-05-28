@@ -33,8 +33,8 @@ class ExcitingProfile(BaseProfile):
     """
     configvars = {'species_path'}
 
-    def __init__(self, binary, species_path=None, **kwargs):
-        super().__init__(binary, **kwargs)
+    def __init__(self, command, species_path=None, **kwargs):
+        super().__init__(command, **kwargs)
 
         self.species_path = species_path
 

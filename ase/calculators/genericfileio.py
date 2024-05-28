@@ -68,7 +68,7 @@ class BaseProfile(ABC):
             elif value:
                 command.append(f'{command_key}')
 
-        command += self._split_binary
+        command += self._split_command
 
         if calc_command is None:
             command.extend(self.get_calculator_command(inputfile))
