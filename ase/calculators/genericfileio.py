@@ -14,7 +14,7 @@ from ase.config import cfg as _cfg
 class BaseProfile(ABC):
     configvars: Set[str] = set()
 
-    def __init__(self, binary, command=None, parallel_info=None):
+    def __init__(self, command=None, parallel_info=None):
         """
         Parameters
         ----------
@@ -22,19 +22,13 @@ class BaseProfile(ABC):
             Additional settings for parallel execution, e.g. arguments
             for the binary for parallelization (mpiexec, srun, mpirun).
         """
-        self.binary = _validate_command(binary)
-        if command is None:
-            command = self.binary
+
         self.command = _validate_command(command)
 
         if parallel_info is None:
             parallel_info = {}
 
         self.parallel_info = parallel_info
-
-    @property
-    def _split_binary(self):
-        return shlex.split(self.binary)
 
     @property
     def _split_command(self):
@@ -177,12 +171,7 @@ class BaseProfile(ABC):
         parallel_config.update(parallel_info)
 
         section = cfg.parser[section_name]
-        binary = section['binary']
-
-        if 'command' in section:
-            command = section['command']
-        else:
-            command = binary
+        command = section['command']
 
         kwargs = {
             varname: section[varname]
@@ -193,7 +182,7 @@ class BaseProfile(ABC):
             kwargs['parallel_info'] = parallel_config
 
         try:
-            return cls(binary=binary, command=command, **kwargs)
+            return cls(command=command, **kwargs)
         except TypeError as err:
             raise BadConfiguration(*err.args)
 

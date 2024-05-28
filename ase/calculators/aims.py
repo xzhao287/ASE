@@ -26,15 +26,15 @@ def get_aims_version(string):
 class AimsProfile(BaseProfile):
     configvars = {'default_species_directory'}
 
-    def __init__(self, binary, default_species_directory=None, **kwargs):
-        super().__init__(binary, **kwargs)
+    def __init__(self, command, default_species_directory=None, **kwargs):
+        super().__init__(command, **kwargs)
         self.default_species_directory = default_species_directory
 
     def get_calculator_command(self, inputfile):
         return []
 
     def version(self):
-        return get_aims_version(read_stdout(self._split_binary))
+        return get_aims_version(read_stdout(self._split_command))
 
 
 class AimsTemplate(CalculatorTemplate):

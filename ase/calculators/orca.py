@@ -14,7 +14,7 @@ class OrcaProfile(BaseProfile):
     def version(self):
         # XXX Allow MPI in argv; the version call should not be parallel.
         from ase.calculators.genericfileio import read_stdout
-        stdout = read_stdout([self.binary, "does_not_exist"])
+        stdout = read_stdout([self.command, "does_not_exist"])
         return get_version_from_orca_header(stdout)
 
     def get_calculator_command(self, inputfile):

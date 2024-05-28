@@ -31,8 +31,8 @@ compatibility_msg = (
 class EspressoProfile(BaseProfile):
     configvars = {'pseudo_dir'}
 
-    def __init__(self, binary, pseudo_dir, **kwargs):
-        super().__init__(binary, **kwargs)
+    def __init__(self, command, pseudo_dir, **kwargs):
+        super().__init__(command, **kwargs)
         self.pseudo_dir = Path(pseudo_dir)
 
     @staticmethod
@@ -45,7 +45,7 @@ class EspressoProfile(BaseProfile):
 
     def version(self):
         try:
-            stdout = read_stdout(self._split_binary)
+            stdout = read_stdout(self._split_command)
             return self.parse_version(stdout)
         except FileNotFoundError:
             warnings.warn(

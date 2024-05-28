@@ -14,11 +14,11 @@ from ase.calculators.genericfileio import (BaseProfile, CalculatorTemplate,
 class AbinitProfile(BaseProfile):
     configvars = {'pp_paths'}
 
-    def __init__(self, binary, *, pp_paths=None, **kwargs):
-        super().__init__(binary, **kwargs)
+    def __init__(self, command, *, pp_paths=None, **kwargs):
+        super().__init__(command, **kwargs)
         # XXX pp_paths is a raw configstring when it gets here.
         # All the config stuff should have been loaded somehow by now,
-        # so this should be refactored.º
+        # so this should be refactored.
         if isinstance(pp_paths, str):
             pp_paths = [path for path in pp_paths.splitlines() if path]
         if pp_paths is None:
@@ -26,7 +26,7 @@ class AbinitProfile(BaseProfile):
         self.pp_paths = pp_paths
 
     def version(self):
-        argv = [*self._split_binary, '--version']
+        argv = [*self._split_command, '--version']
         return check_output(argv, encoding='ascii').strip()
 
     def get_calculator_command(self, inputfile):

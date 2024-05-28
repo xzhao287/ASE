@@ -96,13 +96,13 @@ pseudo_path = {path}/siesta
         # than the ones we want.  Therefore, we override datafile paths.
         cfg = Config.read()
 
-        for name in factory_classes:
-            # We don't want MPI to run in the tests.  For testing
-            # we override the command to always be the binary:
-            if name in cfg.parser:
-                section = cfg.parser[name]
-                if 'binary' in section:
-                    section['command'] = section['binary']
+        #for name in factory_classes:
+            #if name in cfg.parser:
+                # XXX It would be nice if we could avoid triggering MPI
+                # during the tests.
+                #section = cfg.parser[name]
+                #if 'binary' in section:
+                #    section['command'] = section['binary']
 
         cfg.parser.read_string(self.datafile_config)
         return cfg
@@ -211,7 +211,7 @@ class CP2KFactory:
 @factory('castep')
 class CastepFactory:
     def __init__(self, cfg):
-        self.executable = cfg.parser['castep']['binary']
+        self.executable = cfg.parser['castep']['command']
 
     def version(self):
         return get_castep_version(self.executable)
@@ -226,7 +226,7 @@ class DFTBFactory:
         self.profile = Dftb.load_argv_profile(cfg, 'dftb')
 
     def version(self):
-        stdout = read_stdout(self.profile._split_binary)
+        stdout = read_stdout(self.profile._split_command)
         match = re.search(r'DFTB\+ release\s*(\S+)', stdout, re.M)
         return match.group(1)
 
@@ -242,7 +242,7 @@ class DFTBFactory:
 @factory('dftd3')
 class DFTD3Factory:
     def __init__(self, cfg):
-        self.executable = cfg.parser['dftd3']['binary']
+        self.executable = cfg.parser['dftd3']['command']
 
     def version(self):
         return '<Unknown>'
@@ -258,7 +258,7 @@ class ElkFactory:
         self.species_dir = cfg.parser['elk']['species_dir']
 
     def version(self):
-        output = read_stdout(self.profile._split_binary)
+        output = read_stdout(self.profile._split_command)
         match = re.search(r'Elk code version (\S+)', output, re.M)
         return match.group(1)
 
@@ -343,7 +343,7 @@ class MOPACFactory:
 @factory('vasp')
 class VaspFactory:
     def __init__(self, cfg):
-        self.executable = cfg.parser['vasp']['binary']
+        self.executable = cfg.parser['vasp']['command']
 
     def version(self):
         header = read_stdout([self.executable], createfile='INCAR')
@@ -402,7 +402,7 @@ class Psi4Factory:
 @factory('gromacs')
 class GromacsFactory:
     def __init__(self, cfg):
-        self.executable = cfg.parser['gromacs']['binary']
+        self.executable = cfg.parser['gromacs']['command']
 
     def version(self):
         return get_gromacs_version(self.executable)
@@ -434,7 +434,7 @@ class EMTFactory(BuiltinCalculatorFactory):
 @factory('lammpsrun')
 class LammpsRunFactory:
     def __init__(self, cfg):
-        self.executable = cfg.parser['lammps']['binary']
+        self.executable = cfg.parser['lammps']['command']
         self.potentials_path = cfg.parser['lammps']['potentials']
         # XXX if lammps wants this variable set we should pass it to Popen.
         # But if ASE wants it, it should be passed programmatically.
@@ -493,7 +493,7 @@ class LammpsLibFactory:
 class OpenMXFactory:
     def __init__(self, cfg):
         # XXX Cannot test this, is surely broken.
-        self.executable = cfg.parser['openmx']['binary']
+        self.executable = cfg.parser['openmx']['command']
         self.data_path = cfg.parser['openmx']['data_path']
 
     def version(self):
@@ -528,7 +528,7 @@ class OctopusFactory:
 @factory('orca')
 class OrcaFactory:
     def __init__(self, cfg):
-        self.executable = cfg.parser['orca']['binary']
+        self.executable = cfg.parser['orca']['command']
 
     def _profile(self):
         from ase.calculators.orca import OrcaProfile
@@ -552,7 +552,7 @@ class SiestaFactory:
     def version(self):
         from ase.calculators.siesta.siesta import get_siesta_version
 
-        full_ver = get_siesta_version(self.profile._split_binary)
+        full_ver = get_siesta_version(self.profile._split_command)
         m = re.match(r'siesta-(\S+)', full_ver, flags=re.I)
         if m:
             return m.group(1)
@@ -579,7 +579,7 @@ class NWChemFactory:
         self.profile = NWChem.load_argv_profile(cfg, 'nwchem')
 
     def version(self):
-        stdout = read_stdout(self.profile._split_binary,
+        stdout = read_stdout(self.profile._split_command,
                              createfile='nwchem.nw')
         match = re.search(
             r'Northwest Computational Chemistry Package \(NWChem\) (\S+)',

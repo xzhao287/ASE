@@ -1012,12 +1012,10 @@ def _validate_command(command: str) -> str:
 
 @dataclass
 class StandardProfile:
-    binary: str
     command: str
     configvars: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
-        self.binary = _validate_command(self.binary)
         self.command = _validate_command(self.command)
 
     def execute(self, calc):
@@ -1037,10 +1035,6 @@ class StandardProfile:
         # XXX Unduplicate common stuff between StandardProfile and
         # that of GenericFileIO
         return shlex.split(self.command)
-
-    @property
-    def _split_binary(self):
-        return shlex.split(self.binary)
 
     def _call(self, calc, subprocess_function):
         from contextlib import ExitStack
@@ -1140,13 +1134,12 @@ class FileIOCalculator(Calculator):
             configvars = {}
 
         try:
-            binary = section['binary']
+            command = section['command']
         except KeyError:
             raise BadConfiguration(
-                f'No binary field in {section_name!r} section')
+                f'No command field in {section_name!r} section')
 
-        command = section.get('command', binary)
-        return StandardProfile(binary, command, configvars)
+        return StandardProfile(command, configvars)
 
     def _initialize_profile(self, command):
         if command is None:
