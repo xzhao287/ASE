@@ -121,6 +121,7 @@ calculators-lite:
   script:
     - pip install --no-deps --editable .
     - export ASE_CONFIG_PATH=/home/ase/aseconfig.ini
+    - sed 's/binary = /command = /' -i /home/ase/aseconfig.ini
     - >
       ase test calculator --calculators=auto --coverage
       --pytest -m calculator_lite --color=yes --durations=20 -v

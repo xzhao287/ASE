@@ -150,6 +150,7 @@ class Siesta(FileIOCalculator):
     accepts_bandpath_keyword = True
 
     fileio_rules = FileIOCalculator.ruleset(
+        configspec=dict(pseudo_path=None),
         stdin_name='{prefix}.fdf',
         stdout_name='{prefix}.out')
 
@@ -377,13 +378,13 @@ class Siesta(FileIOCalculator):
 
         species, species_numbers = self.species(atoms)
 
-        if self['pseudo_path'] is not None:
-            pseudo_path = self['pseudo_path']
-        elif 'SIESTA_PP_PATH' in self.cfg:
-            pseudo_path = self.cfg['SIESTA_PP_PATH']
-        else:
-            mess = "Please set the environment variable 'SIESTA_PP_PATH'"
-            raise Exception(mess)
+        pseudo_path = (self['pseudo_path']
+                       or self.profile.configvars.get('pseudo_path')
+                       or self.cfg.get('SIESTA_PP_PATH'))
+
+        if not pseudo_path:
+            raise Exception(
+                'Please configure pseudo_path or SIESTA_PP_PATH envvar')
 
         species_info = SpeciesInfo(
             atoms=atoms,

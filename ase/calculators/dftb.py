@@ -11,7 +11,7 @@ import os
 import numpy as np
 
 from ase.calculators.calculator import (FileIOCalculator, kpts2ndarray,
-                                        kpts2sizeandoffsets)
+                                        kpts2sizeandoffsets, BadConfiguration)
 from ase.units import Bohr, Hartree
 
 
@@ -21,6 +21,7 @@ class Dftb(FileIOCalculator):
     discard_results_on_any_change = True
 
     fileio_rules = FileIOCalculator.ruleset(
+        configspec=dict(skt_path=None),
         stdout_name='{prefix}.out')
 
     def __init__(self, restart=None,
@@ -92,16 +93,26 @@ class Dftb(FileIOCalculator):
         if command is None:
             if 'DFTB_COMMAND' in self.cfg:
                 command = self.cfg['DFTB_COMMAND'] + ' > PREFIX.out'
-            else:
-                command = 'dftb+ > PREFIX.out'
+
+        if command is None and profile is None:
+            try:
+                profile = self.load_argv_profile(self.cfg, 'dftb')
+            except BadConfiguration:
+                pass
+
+        if command is None:
+            command = 'dftb+ > PREFIX.out'
 
         if slako_dir is None:
-            slako_dir = self.cfg.get('DFTB_PREFIX', './')
+            if profile is not None:
+                slako_dir = profile.configvars.get('skt_path')
+
+            if slako_dir is None:
+                slako_dir = self.cfg.get('DFTB_PREFIX', './')
             if not slako_dir.endswith('/'):
                 slako_dir += '/'
 
         self.slako_dir = slako_dir
-
         if kwargs.get('Hamiltonian_', 'DFTB') == 'DFTB':
             self.default_parameters = dict(
                 Hamiltonian_='DFTB',

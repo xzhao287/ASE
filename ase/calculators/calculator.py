@@ -3,9 +3,10 @@ import os
 import subprocess
 import warnings
 from abc import abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from math import pi, sqrt
 from pathlib import Path
+import shlex
 from typing import Any, Dict, List, Optional, Sequence, Set, Union
 
 import numpy as np
@@ -931,15 +932,15 @@ class Calculator(BaseCalculator):
 
 
 class OldShellProfile:
-    def __init__(self, name, command):
-        self.name = name
+    def __init__(self, command):
         self.command = command
+        self.configvars = {}
 
     def execute(self, calc):
         if self.command is None:
             raise EnvironmentError(
                 'Please set ${} environment variable '.format(
-                    'ASE_' + self.name.upper() + '_COMMAND'
+                    'ASE_' + self.calc.upper() + '_COMMAND'
                 )
                 + 'or supply the command keyword'
             )
@@ -964,7 +965,7 @@ class OldShellProfile:
             msg = (
                 'Calculator "{}" failed with command "{}" failed in '
                 '{} with error code {}'.format(
-                    self.name, command, path, errorcode
+                    calc.name, command, path, errorcode
                 )
             )
             raise CalculationFailed(msg)
@@ -983,23 +984,57 @@ class FileIORules:
     stdin_name: Optional[str] = None
     stdout_name: Optional[str] = None
 
+    configspec: Dict[str, Any] = field(default_factory=dict)
 
-class ArgvProfile:
-    def __init__(self, name, argv):
-        self.name = name
-        self.argv = argv
+    def load_config(self, section):
+        dct = {}
+        for key, value in self.configspec.items():
+            if key in section:
+                value = section[key]
+            dct[key] = value
+        return dct
+
+
+class BadConfiguration(Exception):
+    pass
+
+
+def _validate_command(command: str) -> str:
+    # We like to store commands as strings (and call shlex.split() later),
+    # but we also like to validate them early.  This will error out if
+    # command contains syntax problems and will also normalize e.g.
+    # multiple spaces:
+    try:
+        return shlex.join(shlex.split(command))
+    except ValueError as err:
+        raise BadConfiguration('Cannot parse command string') from err
+
+
+@dataclass
+class StandardProfile:
+    command: str
+    configvars: Dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self):
+        self.command = _validate_command(self.command)
 
     def execute(self, calc):
         try:
             self._call(calc, subprocess.check_call)
         except subprocess.CalledProcessError as err:
             directory = Path(calc.directory).resolve()
-            msg = (f'Calculator {self.name} failed with args {err.args} '
+            msg = (f'Calculator {calc.name} failed with args {err.args} '
                    f'in directory {directory}')
             raise CalculationFailed(msg) from err
 
     def execute_nonblocking(self, calc):
         return self._call(calc, subprocess.Popen)
+
+    @property
+    def _split_command(self):
+        # XXX Unduplicate common stuff between StandardProfile and
+        # that of GenericFileIO
+        return shlex.split(self.command)
 
     def _call(self, calc, subprocess_function):
         from contextlib import ExitStack
@@ -1020,7 +1055,7 @@ class ArgvProfile:
             stdout_fd = _maybe_open(fileio_rules.stdout_name, 'wb')
             stdin_fd = _maybe_open(fileio_rules.stdin_name, 'rb')
 
-            argv = [*self.argv, *fileio_rules.extend_argv]
+            argv = [*self._split_command, *fileio_rules.extend_argv]
             argv = [arg.format(prefix=calc.prefix) for arg in argv]
             return subprocess_function(
                 argv, cwd=directory,
@@ -1030,6 +1065,9 @@ class ArgvProfile:
 
 class FileIOCalculator(Calculator):
     """Base class for calculators that write/read input/output files."""
+
+    # Static specification of rules for this calculator:
+    fileio_rules: Optional[FileIORules] = None
 
     # command: Optional[str] = None
     # 'Command used to start calculation'
@@ -1083,33 +1121,45 @@ class FileIOCalculator(Calculator):
 
     @classmethod
     def load_argv_profile(cls, cfg, section_name):
-        import shlex
-
         # Helper method to load configuration.
         # This is used by the tests, do not rely on this as it will change.
-        section = cfg.parser[section_name]
-        argv = shlex.split(section['binary'])
-        return ArgvProfile(section_name, argv)
+        try:
+            section = cfg.parser[section_name]
+        except KeyError:
+            raise BadConfiguration(f'No {section_name!r} section')
+
+        if cls.fileio_rules is not None:
+            configvars = cls.fileio_rules.load_config(section)
+        else:
+            configvars = {}
+
+        try:
+            command = section['command']
+        except KeyError:
+            raise BadConfiguration(
+                f'No command field in {section_name!r} section')
+
+        return StandardProfile(command, configvars)
 
     def _initialize_profile(self, command):
         if command is None:
             name = 'ASE_' + self.name.upper() + '_COMMAND'
             command = self.cfg.get(name)
 
+        if command is None and self.name in self.cfg.parser:
+            return self.load_argv_profile(self.cfg, self.name)
+
         if command is None:
             # XXX issue a FutureWarning if this causes the command
             # to no longer be None
             command = self._legacy_default_command
-
-        if command is None and self.name in self.cfg.parser:
-            return self.load_argv_profile(self.cfg, self.name)
 
         if command is None:
             raise EnvironmentError(
                 f'No configuration of {self.name}.  '
                 f'Missing section [{self.name}] in configuration')
 
-        return OldShellProfile(self.name, command)
+        return OldShellProfile(command)
 
     def calculate(
         self, atoms=None, properties=['energy'], system_changes=all_changes

@@ -2,52 +2,37 @@ from abc import ABC, abstractmethod
 from contextlib import ExitStack
 from os import PathLike
 from pathlib import Path
-from typing import Any, Iterable, List, Mapping, Optional
+import shlex
+from typing import Any, Iterable, List, Mapping, Optional, Set
 
 from ase.calculators.abc import GetOutputsMixin
-from ase.calculators.calculator import BaseCalculator, EnvironmentError
+from ase.calculators.calculator import (
+    BaseCalculator, _validate_command, BadConfiguration)
 from ase.config import cfg as _cfg
 
 
 class BaseProfile(ABC):
-    def __init__(self, parallel=True, parallel_info=None):
+    configvars: Set[str] = set()
+
+    def __init__(self, command=None, parallel_info=None):
         """
         Parameters
         ----------
-        parallel : bool
-            If the calculator should be run in parallel.
         parallel_info : dict
             Additional settings for parallel execution, e.g. arguments
             for the binary for parallelization (mpiexec, srun, mpirun).
         """
-        self.parallel_info = parallel_info or {}
-        self.parallel = parallel
 
-    def get_translation_keys(self):
-        """
-        Get the translation keys for the parallel_info dictionary.
+        self.command = _validate_command(command)
 
-        A translation key is specified in a config file with the syntax
-        `key_kwarg_trans = command, type`, e.g if `nprocs_kwarg_trans = -np`
-        is specified in the config file, then the key `nprocs` will be
-        translated to `-np`. Then `nprocs` can be specified in parallel_info
-        and will be translated to `-np` when the command is build.
+        if parallel_info is None:
+            parallel_info = {}
 
-        Returns
-        -------
-        dict of iterable
-            Dictionary with translation keys where the keys are the keys in
-            parallel_info that will be translated, the value is what the key
-            will be translated into.
-        """
-        translation_keys = {}
-        for key, value in self.parallel_info.items():
-            if len(key) < 12:
-                continue
-            if key.endswith('_kwarg_trans'):
-                trans_key = key[:-12]
-                translation_keys[trans_key] = value
-        return translation_keys
+        self.parallel_info = parallel_info
+
+    @property
+    def _split_command(self):
+        return shlex.split(self.command)
 
     def get_command(self, inputfile, calc_command=None) -> List[str]:
         """
@@ -63,26 +48,27 @@ class BaseProfile(ABC):
         list of str
             The command to run.
         """
-        command = []
-        if self.parallel:
-            if 'binary' in self.parallel_info:
-                command.append(self.parallel_info['binary'])
+        if 'binary' not in self.parallel_info:
+            if calc_command is None:
+                calc_command = self.get_calculator_command(inputfile)
+            return [*self._split_command, *calc_command]
 
-            translation_keys = self.get_translation_keys()
+        # (This way to handle parallel info will change.)
+        command = [self.parallel_info['binary']]
 
-            for key, value in self.parallel_info.items():
-                if key == 'binary' or '_kwarg_trans' in key:
-                    continue
+        for key, value in self.parallel_info.items():
+            if key == 'binary':
+                continue
 
-                command_key = key
-                if key in translation_keys:
-                    command_key = translation_keys[key]
+            command_key = key
 
-                if type(value) is not bool:
-                    command.append(f'{command_key}')
-                    command.append(f'{value}')
-                elif value:
-                    command.append(f'{command_key}')
+            if type(value) is not bool:
+                command.append(f'{command_key}')
+                command.append(f'{value}')
+            elif value:
+                command.append(f'{command_key}')
+
+        command += self._split_command
 
         if calc_command is None:
             command.extend(self.get_calculator_command(inputfile))
@@ -104,7 +90,6 @@ class BaseProfile(ABC):
         list of str
             The command to run.
         """
-        ...
 
     def run(
         self, directory: Path, inputfile: Optional[str],
@@ -152,20 +137,17 @@ class BaseProfile(ABC):
 
     @abstractmethod
     def version(self):
-        """
-        Get the version of the code.
+        """Get the version of the code.
 
         Returns
         -------
         str
             The version of the code.
         """
-        ...
 
     @classmethod
-    def from_config(cls, cfg, section_name, parallel_info=None, parallel=True):
-        """
-        Create a profile from a configuration file.
+    def from_config(cls, cfg, section_name, parallel_info=None):
+        """Create a profile from a configuration file.
 
         Parameters
         ----------
@@ -180,22 +162,29 @@ class BaseProfile(ABC):
         BaseProfile
             The profile object.
         """
-        parallel_config = dict(cfg.parser['parallel'])
+        try:
+            parallel_config = dict(cfg.parser['parallel'])
+        except KeyError:
+            parallel_config = {}
+
         parallel_info = parallel_info if parallel_info is not None else {}
         parallel_config.update(parallel_info)
 
+        section = cfg.parser[section_name]
+        command = section['command']
+
+        kwargs = {
+            varname: section[varname]
+            for varname in cls.configvars if varname in section
+        }
+
+        if 'binary' in parallel_config:
+            kwargs['parallel_info'] = parallel_config
+
         try:
-            return cls(
-                **cfg.parser[section_name],
-                parallel_info=parallel_config,
-                parallel=parallel,
-            )
+            return cls(command=command, **kwargs)
         except TypeError as err:
             raise BadConfiguration(*err.args)
-
-
-class BadConfiguration(Exception):
-    pass
 
 
 def read_stdout(args, createfile=None):
@@ -243,7 +232,7 @@ class CalculatorTemplate(ABC):
         ...
 
     @abstractmethod
-    def load_profile(self, cfg, parallel_info=None, parallel=True):
+    def load_profile(self, cfg, parallel_info=None):
         ...
 
     def socketio_calculator(
@@ -327,19 +316,18 @@ class GenericFileIOCalculator(BaseCalculator, GetOutputsMixin):
         directory,
         parameters=None,
         parallel_info=None,
-        parallel=True,
     ):
         self.template = template
         if profile is None:
             if template.name not in self.cfg.parser:
-                raise EnvironmentError(f'No configuration of {template.name}')
+                raise BadConfiguration(f'No configuration of {template.name}')
             try:
                 profile = template.load_profile(
-                    self.cfg, parallel_info=parallel_info, parallel=parallel
+                    self.cfg, parallel_info=parallel_info,
                 )
             except Exception as err:
                 configvars = self.cfg.as_dict()
-                raise EnvironmentError(
+                raise BadConfiguration(
                     f'Failed to load section [{template.name}] '
                     f'from configuration: {configvars}'
                 ) from err

@@ -31,12 +31,12 @@ class ExcitingProfile(BaseProfile):
        * OnlyTypo fix part of the profile used in the base class is the run
          method, which is part of the BinaryRunner class.
     """
+    configvars = {'species_path'}
 
-    def __init__(self, binary, species_path=None, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, command, species_path=None, **kwargs):
+        super().__init__(command, **kwargs)
 
         self.species_path = species_path
-        self.binary = binary
 
     def version(self):
         """Return exciting version."""
@@ -54,9 +54,9 @@ class ExcitingProfile(BaseProfile):
         # input_file unused for exciting, it looks for input.xml in run
         # directory.
         if input_file is None:
-            return [self.binary]
+            return []
         else:
-            return [self.binary, str(input_file)]
+            return [str(input_file)]
 
 
 class ExcitingGroundStateTemplate(CalculatorTemplate):
@@ -258,7 +258,6 @@ class ExcitingGroundStateCalculator(GenericFileIOCalculator):
         directory='./',
         species_path='./',
         title='ASE-generated input',
-        parallel=None,
         parallel_info=None,
     ):
         self.runner = runner
@@ -286,5 +285,4 @@ class ExcitingGroundStateCalculator(GenericFileIOCalculator):
             directory=directory,
             parameters=self.exciting_inputs,
             parallel_info=parallel_info,
-            parallel=parallel,
         )

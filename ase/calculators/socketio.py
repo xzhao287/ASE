@@ -6,7 +6,7 @@ from subprocess import PIPE, Popen
 import numpy as np
 
 import ase.units as units
-from ase.calculators.calculator import (ArgvProfile, Calculator,
+from ase.calculators.calculator import (StandardProfile, Calculator,
                                         OldShellProfile,
                                         PropertyNotImplementedError,
                                         all_changes)
@@ -249,7 +249,7 @@ class FileIOSocketClientLauncher:
             elif isinstance(profile, OldShellProfile):
                 cmd = profile.command.replace("PREFIX", self.calc.prefix)
                 return Popen(cmd, shell=True, cwd=cwd)
-            elif isinstance(profile, ArgvProfile):
+            elif isinstance(profile, StandardProfile):
                 return profile.execute_nonblocking(self.calc)
 
 
