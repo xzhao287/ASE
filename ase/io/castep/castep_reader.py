@@ -2,7 +2,6 @@ import io
 import re
 import warnings
 from collections import defaultdict
-from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -18,18 +17,11 @@ def read_castep_castep(castep_file, index=-1):
 
     The calculator information will be stored in the calc attribute.
 
-    There is no use of the "index" argument as of now, it is just inserted for
-    convenience to comply with the generic "read()" in ase.io
-
     Notes
     -----
     This routine will return an atom ordering as found within the castep file.
     This means that the species will be ordered by ascending atomic numbers.
     The atoms witin a species are ordered as given in the original cell file.
-
-    This routine returns a single atoms_object only, the last
-    configuration in the file. Yet, if you want to parse an MD run, use the
-    novel function `read_md()`
 
     """
     _close = True
@@ -51,11 +43,6 @@ def read_castep_castep(castep_file, index=-1):
         return
         # we return here, because the file has no a regular end
 
-    # now iterate over last CASTEP output in file to extract information
-    # could be generalized as well to extract trajectory from file
-    # holding several outputs
-    n_cell_const = 0
-
     # These variables are finally assigned to `SinglePointCalculator`
     # for backward compatibility with the `Castep` calculator.
     cut_off_energy = None
@@ -71,6 +58,8 @@ def read_castep_castep(castep_file, index=-1):
         cut_off_energy = parameters_header['cut_off_energy']
         if 'basis_precision' in parameters_header:
             del parameters_header['cut_off_energy']  # avoid conflict
+
+    images = []
 
     results = {}
     species_pot = []
@@ -127,8 +116,6 @@ def read_castep_castep(castep_file, index=-1):
                         # after each calculation triggering unnecessary
                         # recalculation
                         break
-            elif 'Number of cell constraints' in line:
-                n_cell_const = int(line.split()[4])
 
             elif 'Final energy' in line:
                 key = 'energy_without_dispersion_correction'
@@ -172,19 +159,19 @@ def read_castep_castep(castep_file, index=-1):
 
             elif ('BFGS: starting iteration' in line
                     or 'BFGS: improving iteration' in line):
-                if n_cell_const < 6:
-                    lattice_real = []
-                # backup previous configuration first:
-                # for highly symmetric systems (where essentially only the
-                # stress is optimized, but the atomic positions) positions
-                # are only printed once.
-                if species:
-                    prev_species = deepcopy(species)
-                if positions_frac:
-                    prev_positions_frac = deepcopy(positions_frac)
-                species = []
-                positions_frac = []
-
+                _add_atoms(
+                    images,
+                    lattice_real,
+                    species,
+                    custom_species,
+                    positions_frac,
+                    constraints,
+                    results,
+                )
+                # reset for the next step
+                lattice_real = None
+                species = None
+                positions_frac = None
                 results = {}
 
             # extract info from the Mulliken analysis
@@ -221,43 +208,33 @@ def read_castep_castep(castep_file, index=-1):
     if _close:
         out.close()
 
-    _set_energy_and_free_energy(results)
-
-    # in highly summetric crystals, positions and symmetry are only printed
-    # upon init, hence we here restore these original values
-    if not positions_frac:
-        positions_frac = prev_positions_frac
-    if not species:
-        species = prev_species
-
-    atoms = Atoms(
+    # add the last image
+    _add_atoms(
+        images,
+        lattice_real,
         species,
-        cell=lattice_real,
-        constraint=constraints,
-        pbc=True,
-        scaled_positions=positions_frac,
+        custom_species,
+        positions_frac,
+        constraints,
+        results,
     )
-    if custom_species is not None:
-        atoms.new_array('castep_custom_species', np.array(custom_species))
 
-    atoms.calc = SinglePointCalculator(atoms)
-    atoms.calc.results = results
-
-    # these variables are temporarily assigned to `SinglePointCalculator`
-    # to be reassigned to the `Castep` calculator for backward compatibility
-    atoms.calc._cut_off_energy = cut_off_energy
-    atoms.calc._kpoints = kpoints
-    atoms.calc._species_pot = species_pot
-    atoms.calc._total_time = total_time
-    atoms.calc._peak_memory = peak_memory
-    atoms.calc._parameters_header = parameters_header
+    for atoms in images:
+        # these variables are temporarily assigned to `SinglePointCalculator`
+        # to be assigned to the `Castep` calculator for backward compatibility
+        atoms.calc._cut_off_energy = cut_off_energy
+        atoms.calc._kpoints = kpoints
+        atoms.calc._species_pot = species_pot
+        atoms.calc._total_time = total_time
+        atoms.calc._peak_memory = peak_memory
+        atoms.calc._parameters_header = parameters_header
 
     if castep_warnings:
         warnings.warn(f'WARNING: {castep_file} contains warnings')
         for warning in castep_warnings:
             warnings.warn(warning)
 
-    return atoms
+    return images[index]
 
 
 def _castep_find_last_record(castep_file):
@@ -541,6 +518,54 @@ def _read_stress(out: io.TextIOBase):
     if "Pressure:" in line:
         results['pressure'] = float(line.split()[-2]) * units.GPa
     return results
+
+
+def _add_atoms(
+    images,
+    lattice_real,
+    species,
+    custom_species,
+    positions_frac,
+    constraints,
+    results,
+):
+    # If all the lattice parameters are fixed,
+    # the `Unit Cell` block in the .castep file is not printed
+    # in every ionic step.
+    # The lattice paramters are therefore taken from the last step.
+    # This happens:
+    # - `GeometryOptimization`: `FIX_ALL_CELL : TRUE`
+    # - `MolecularDynamics`: `MD_ENSEMBLE : NVE or NVT`
+    if lattice_real is None:
+        lattice_real = images[-1].cell.copy()
+
+    # for highly symmetric systems (where essentially only the
+    # stress is optimized, but the atomic positions) positions
+    # are only printed once.
+    if species is None:
+        species = images[-1].symbols
+    if positions_frac is None:
+        positions_frac = images[-1].get_scaled_positions()
+
+    _set_energy_and_free_energy(results)
+
+    atoms = Atoms(
+        species,
+        cell=lattice_real,
+        constraint=constraints,
+        pbc=True,
+        scaled_positions=positions_frac,
+    )
+    if custom_species is not None:
+        atoms.new_array(
+            'castep_custom_species',
+            np.array(custom_species),
+        )
+
+    atoms.calc = SinglePointCalculator(atoms)
+    atoms.calc.results = results
+
+    images.append(atoms)
 
 
 def _read_mulliken_charges(out: io.TextIOBase):
