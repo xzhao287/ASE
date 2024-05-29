@@ -10,9 +10,11 @@ from ase import Atoms, units
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.constraints import FixAtoms, FixCartesian, FixConstraint
 from ase.parallel import paropen
+from ase.utils import reader
 
 
-def read_castep_castep(castep_file, index=-1):
+@reader
+def read_castep_castep(fd, index=-1):
     """Read a .castep file and returns an Atoms object.
 
     The calculator information will be stored in the calc attribute.
@@ -24,24 +26,11 @@ def read_castep_castep(castep_file, index=-1):
     The atoms witin a species are ordered as given in the original cell file.
 
     """
-    _close = True
-
-    if isinstance(castep_file, str):
-        out = paropen(castep_file, 'r')
-
-    else:
-        # in this case we assume that we have a fileobj already
-        castep_file = out.name
-        _close = False
-
     # look for last result, if several CASTEP run are appended
-    record_start, record_end, end_found, _ = _castep_find_last_record(out)
+    record_start, record_end, end_found, _ = _castep_find_last_record(fd)
     if not end_found:
-        warnings.warn(f'No regular end found in {castep_file} file.')
-        if _close:
-            out.close()
-        return
-        # we return here, because the file has no a regular end
+        warnings.warn(f'No regular end found in {fd.name} file.')
+        return  # we return here, because the file has no a regular end
 
     # These variables are finally assigned to `SinglePointCalculator`
     # for backward compatibility with the `Castep` calculator.
@@ -50,10 +39,10 @@ def read_castep_castep(castep_file, index=-1):
     total_time = None
     peak_memory = None
 
-    out.seek(record_start)
+    fd.seek(record_start)
 
     # read header
-    parameters_header = _read_header(out)
+    parameters_header = _read_header(fd)
     if 'cut_off_energy' in parameters_header:
         cut_off_energy = parameters_header['cut_off_energy']
         if 'basis_precision' in parameters_header:
@@ -74,16 +63,16 @@ def read_castep_castep(castep_file, index=-1):
         # TODO: add a switch if we have a geometry optimization: record
         # atoms objects for intermediate steps.
         try:
-            line = out.readline()
-            if not line or out.tell() > record_end:
+            line = fd.readline()
+            if not line or fd.tell() > record_end:
                 break
             elif 'Number of kpoints used' in line:
                 kpoints = int(line.split('=')[-1].strip())
             elif 'Unit Cell' in line:
-                lattice_real = _read_unit_cell(out)
+                lattice_real = _read_unit_cell(fd)
             elif 'Cell Contents' in line:
                 while True:
-                    line = out.readline()
+                    line = fd.readline()
                     if 'Total number of ions in cell' in line:
                         n_atoms = int(line.split()[7])
                     if 'Total number of species in cell' in line:
@@ -93,10 +82,10 @@ def read_castep_castep(castep_file, index=-1):
                         break
             elif 'Fractional coordinates of atoms' in line:
                 species, custom_species, positions_frac = \
-                    _read_fractional_coordinates(out, n_atoms)
+                    _read_fractional_coordinates(fd, n_atoms)
             elif 'Files used for pseudopotentials' in line:
                 while True:
-                    line = out.readline()
+                    line = fd.readline()
                     if 'Pseudopotential generated on-the-fly' in line:
                         continue
                     fields = line.split()
@@ -110,7 +99,7 @@ def read_castep_castep(castep_file, index=-1):
                 # kpoints_offset cannot be read this way and
                 # is hence always set to None
                 while True:
-                    line = out.readline()
+                    line = fd.readline()
                     if not line.strip():
                         break
                     if 'MP grid size for SCF calculation' in line:
@@ -155,13 +144,13 @@ def read_castep_castep(castep_file, index=-1):
             # ******************** Constrained Forces ********************
             # ******************* Unconstrained Forces *******************
             elif re.search(r'\**.* Forces \**', line):
-                forces, constraints = _read_forces(out, n_atoms)
+                forces, constraints = _read_forces(fd, n_atoms)
                 results['forces'] = np.array(forces)
 
             # ***************** Stress Tensor *****************
             # *********** Symmetrised Stress Tensor ***********
             elif re.search(r'\**.* Stress Tensor \**', line):
-                results.update(_read_stress(out))
+                results.update(_read_stress(fd))
 
             elif any(_ in line for _ in markers_new_iteration):
                 _add_atoms(
@@ -181,14 +170,14 @@ def read_castep_castep(castep_file, index=-1):
 
             # extract info from the Mulliken analysis
             elif 'Atomic Populations' in line:
-                results.update(_read_mulliken_charges(out))
+                results.update(_read_mulliken_charges(fd))
 
             # extract detailed Hirshfeld analysis (iprint > 1)
             elif 'Hirshfeld total electronic charge (e)' in line:
-                results.update(_read_hirshfeld_details(out, n_atoms))
+                results.update(_read_hirshfeld_details(fd, n_atoms))
 
             elif 'Hirshfeld Analysis' in line:
-                results.update(_read_hirshfeld_charges(out))
+                results.update(_read_hirshfeld_charges(fd))
 
             # There is actually no good reason to get out of the loop
             # already at this point... or do I miss something?
@@ -209,9 +198,6 @@ def read_castep_castep(castep_file, index=-1):
         except Exception as exception:
             msg = f'{line}|-> line triggered exception: {str(exception)}'
             raise Exception(msg) from exception
-
-    if _close:
-        out.close()
 
     # add the last image
     _add_atoms(
@@ -235,7 +221,7 @@ def read_castep_castep(castep_file, index=-1):
         atoms.calc._parameters_header = parameters_header
 
     if castep_warnings:
-        warnings.warn(f'WARNING: {castep_file} contains warnings')
+        warnings.warn('WARNING: .castep file contains warnings')
         for warning in castep_warnings:
             warnings.warn(warning)
 
