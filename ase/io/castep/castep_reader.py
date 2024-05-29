@@ -10,7 +10,7 @@ from ase import Atoms, units
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.constraints import FixAtoms, FixCartesian, FixConstraint
 from ase.parallel import paropen
-from ase.utils import reader
+from ase.utils import reader, string2index
 
 
 @reader
@@ -224,6 +224,9 @@ def read_castep_castep(fd, index=-1):
         warnings.warn('WARNING: .castep file contains warnings')
         for warning in castep_warnings:
             warnings.warn(warning)
+
+    if isinstance(index, str):
+        index = string2index(index)
 
     return images[index]
 
