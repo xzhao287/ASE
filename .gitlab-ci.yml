@@ -151,6 +151,7 @@ calculators:
   script:
     - pip install --no-deps --editable .
     - export ASE_CONFIG_PATH=/home/ase/aseconfig.ini
+    - sed 's/binary = /command = /' -i /home/ase/aseconfig.ini
     - ase info --calculators
     - >
       ase test calculator --calculators abinit,asap,cp2k,dftb,espresso,gpaw,kim,lammpslib,lammpsrun,mopac,nwchem,octopus,siesta
