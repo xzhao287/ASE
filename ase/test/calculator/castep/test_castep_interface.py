@@ -11,6 +11,7 @@ from ase.calculators.castep import (
     CastepKeywords,
     make_cell_dict,
     make_param_dict,
+    _get_indices_to_sort_back,
 )
 from ase.io.castep.castep_input_file import (
     CastepCell,
@@ -359,3 +360,13 @@ def test_band_structure_setup(testing_calculator):
     assert len(kpt_list) == 10
     assert list(map(float, kpt_list[0].split())) == [0., 0., 0.]
     assert list(map(float, kpt_list[-1].split())) == [0.5, 0.0, 0.5]
+
+
+def test_get_indices_to_sort_back():
+    """Test if spicies in .castep are sorted back to atoms.symbols."""
+    symbols = ['Si', 'Al', 'P', 'Al', 'P', 'Al', 'P', 'C']
+    species = ['C', 'Al', 'Al', 'Al', 'Si', 'P', 'P', 'P']
+    indices_ref = [4, 1, 5, 2, 6, 3, 7, 0]
+    assert [species[_] for _ in indices_ref] == symbols
+    indices = _get_indices_to_sort_back(symbols, species)
+    assert indices.tolist() == indices_ref

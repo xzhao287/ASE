@@ -3,13 +3,17 @@ from io import StringIO
 
 import numpy as np
 
-from ase.calculators.castep import (_get_indices_to_sort_back, _read_forces,
-                                    _read_fractional_coordinates, _read_header,
-                                    _read_hirshfeld_charges,
-                                    _read_hirshfeld_details,
-                                    _read_mulliken_charges, _read_stress,
-                                    _read_unit_cell,
-                                    _set_energy_and_free_energy)
+from ase.io.castep.castep_reader import (
+    _read_forces,
+    _read_fractional_coordinates,
+    _read_header,
+    _read_hirshfeld_charges,
+    _read_hirshfeld_details,
+    _read_mulliken_charges,
+    _read_stress,
+    _read_unit_cell,
+    _set_energy_and_free_energy,
+)
 from ase.constraints import FixAtoms, FixCartesian
 from ase.units import GPa
 
@@ -528,16 +532,6 @@ def test_hirshfeld_spin_polarized():
     results = _read_hirshfeld_charges(out)
     np.testing.assert_allclose(results['hirshfeld_charges'], [+0.06, -0.06])
     np.testing.assert_allclose(results['hirshfeld_magmoms'], [+4.40, +0.36])
-
-
-def test_get_indices_to_sort_back():
-    """Test if spicies in .castep are sorted back to atoms.symbols."""
-    symbols = ['Si', 'Al', 'P', 'Al', 'P', 'Al', 'P', 'C']
-    species = ['C', 'Al', 'Al', 'Al', 'Si', 'P', 'P', 'P']
-    indices_ref = [4, 1, 5, 2, 6, 3, 7, 0]
-    assert [species[_] for _ in indices_ref] == symbols
-    indices = _get_indices_to_sort_back(symbols, species)
-    assert indices.tolist() == indices_ref
 
 
 def test_energy_and_free_energy_metallic():

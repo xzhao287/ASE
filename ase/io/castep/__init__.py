@@ -795,7 +795,7 @@ def read_castep(filename, index=None):
     return read(filename, index=index, format='castep-castep')
 
 
-def read_castep_castep(fd, index=None):
+def read_castep_castep(fd, index=-1):
     """
     Reads a .castep file and returns an atoms  object.
     The calculator information will be stored in the calc attribute.
@@ -813,30 +813,12 @@ def read_castep_castep(fd, index=None):
     novel function `read_md()`
     """
 
-    from ase.calculators.castep import Castep
+    if index == -1:
+        from ase.io.castep.castep_reader import read_castep_castep as read
 
-    try:
-        calc = Castep()
-    except Exception as e:
-        # No CASTEP keywords found?
-        warnings.warn(f'WARNING: {e} Using fallback .castep reader...')
-        # Fall back on the old method
-        return read_castep_castep_old(fd, index)
+        return read(fd)
 
-    calc.read(castep_file=fd)
-
-    # now we trick the calculator instance such that we can savely extract
-    # energies and forces from this atom. Basically what we do is to trick the
-    # internal routine calculation_required() to always return False such that
-    # we do not need to re-run a CASTEP calculation.
-    #
-    # Probably we can solve this with a flag to the read() routine at some
-    # point, but for the moment I do not want to change too much in there.
-    calc._old_atoms = calc.atoms
-    calc._old_param = calc.param
-    calc._old_cell = calc.cell
-
-    return [calc.atoms]  # Returning in the form of a list for next()
+    return read_castep_castep_old(fd, index)
 
 
 def read_castep_castep_old(fd, index=None):
