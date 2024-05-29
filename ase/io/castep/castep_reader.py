@@ -59,6 +59,12 @@ def read_castep_castep(castep_file, index=-1):
         if 'basis_precision' in parameters_header:
             del parameters_header['cut_off_energy']  # avoid conflict
 
+    markers_new_iteration = [
+        'BFGS: starting iteration',
+        'BFGS: improving iteration',
+        'Starting MD iteration',
+    ]
+
     images = []
 
     results = {}
@@ -157,8 +163,7 @@ def read_castep_castep(castep_file, index=-1):
             elif re.search(r'\**.* Stress Tensor \**', line):
                 results.update(_read_stress(out))
 
-            elif ('BFGS: starting iteration' in line
-                    or 'BFGS: improving iteration' in line):
+            elif any(_ in line for _ in markers_new_iteration):
                 _add_atoms(
                     images,
                     lattice_real,
