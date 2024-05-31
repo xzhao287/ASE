@@ -95,7 +95,8 @@ def test_cli_viewer_tempfile(atoms, viewer):
 
 @pytest.fixture()
 def mock_viewer():
-    return CLIViewer('dummy', 'traj', [sys.executable, '-m', 'ase', 'info'])
+    return CLIViewer('dummy', 'traj', [sys.executable, '-m', 'ase', 'info',
+                                       '--files'])
 
 
 def test_cli_viewer_blocking(atoms, mock_viewer):
