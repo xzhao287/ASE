@@ -36,7 +36,7 @@ def runcmd(cmd, output=False, error_ok=False):
 bash = runcmd
 
 
-def py(cmd, output=False):
+def py(cmd):
     return runcmd(f'python3 {cmd}')
 
 
@@ -48,8 +48,10 @@ def git(cmd, error_ok=False):
 versionfile = Path(ase.__file__)
 assert versionfile.name == '__init__.py'
 
-ase_toplevel = versionfile.parent
+ase_toplevel = versionfile.parent.parent
 pyproject = ase_toplevel / 'pyproject.toml'
+
+assert ase_toplevel == Path.cwd()
 
 
 def get_version():
@@ -86,15 +88,13 @@ def main():
         git('checkout master')
         # git('tag -d {}'.format(version), error_ok=True)
         git(f'branch -D {branchname}', error_ok=True)
-        git('branch -D {}'.format('web-page'), error_ok=True)
+        # git('branch -D {}'.format('web-page'), error_ok=True)
         return
 
     print(f'New release: {version}')
 
     txt = git('status')
     branch = re.match(r'On branch (\S+)', txt).group(1)
-    print(f'Creating new release from branch {branch!r}')
-    git(f'checkout -b {branchname}')
 
     def match_and_edit_version(path, pattern, replacement):
         print(f'Editing {path}: version {version}')
@@ -109,7 +109,7 @@ def main():
                 lines.append(line)
 
         assert matches == 1, 'Should only match one line!'
-        path.write(''.join(lines))
+        path.write_text(''.join(lines))
 
     match_and_edit_version(
         versionfile,
@@ -121,7 +121,7 @@ def main():
         pattern='version = ',
         replacement=f'version = {version}')
 
-    releasenotes = 'doc/releasenotes.rst'
+    releasenotes = ase_toplevel / 'doc/releasenotes.rst'
 
     searchtxt = re.escape("""\
 Git master branch
@@ -174,7 +174,7 @@ News
 
     replacetxt = replacetxt.format(version=version, date=date)
 
-    frontpage = 'doc/index.rst'
+    frontpage = ase_toplevel / 'doc/index.rst'
 
     print(f'Editing {frontpage}')
     with open(frontpage) as fd:
@@ -184,7 +184,7 @@ News
     with open(frontpage, 'w') as fd:
         fd.write(txt)
 
-    installdoc = 'doc/install.rst'
+    installdoc = ase_toplevel / 'doc/install.rst'
     print(f'Editing {installdoc}')
 
     with open(installdoc) as fd:
@@ -200,8 +200,13 @@ News
     with open(installdoc, 'w') as fd:
         fd.write(txt)
 
-    git('add {}'.format(' '.join([versionfile, installdoc,
-                                  frontpage, releasenotes])))
+    print(f'Creating new release from branch {branch!r}')
+    git(f'checkout -b {branchname}')
+
+    edited_paths = [versionfile, installdoc, pyproject,
+                    frontpage, releasenotes]
+
+    git('add {}'.format(' '.join(str(path) for path in edited_paths)))
     git(f'commit -m "ASE version {version}"')
     # git('tag -s {0} -m "ase-{0}"'.format(version))
 
@@ -213,9 +218,11 @@ News
         shutil.rmtree('build')
     else:
         print('No stale build directory found; proceeding')
-    py('setup.py sdist > setup_sdist.log')
-    py('setup.py bdist_wheel > setup_bdist_wheel3.log')
-    bash(f'gpg --armor --yes --detach-sign dist/ase-{version}.tar.gz')
+
+    py('-m build')
+    # py('setup.py sdist > setup_sdist.log')
+    # py('setup.py bdist_wheel > setup_bdist_wheel3.log')
+    # bash(f'gpg --armor --yes --detach-sign dist/ase-{version}.tar.gz')
 
     print()
     print('Automatic steps done.')
