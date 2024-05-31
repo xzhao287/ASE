@@ -14,7 +14,7 @@ import subprocess
 from pathlib import Path
 from time import strftime
 
-os.environ['LANGUAGE'] = 'C'
+import ase
 
 
 def runcmd(cmd, output=False, error_ok=False):
@@ -45,8 +45,11 @@ def git(cmd, error_ok=False):
     return runcmd(cmd, output=True, error_ok=error_ok)
 
 
-cwd = os.getcwd()
-versionfile = 'ase/__init__.py'
+versionfile = Path(ase.__file__)
+assert versionfile.name == '__init__.py'
+
+ase_toplevel = versionfile.parent
+pyproject = ase_toplevel / 'pyproject.toml'
 
 
 def get_version():
@@ -93,23 +96,30 @@ def main():
     print(f'Creating new release from branch {branch!r}')
     git(f'checkout -b {branchname}')
 
-    def update_version(version):
-        print(f'Editing {versionfile}: version {version}')
-        new_versionline = f"__version__ = '{version}'\n"
+    def match_and_edit_version(path, pattern, replacement):
+        print(f'Editing {path}: version {version}')
         lines = []
-        ok = False
-        with open(versionfile) as fd:
-            for line in fd:
-                if line.startswith('__version__'):
-                    ok = True
-                    line = new_versionline
-                lines.append(line)
-        assert ok
-        with open(versionfile, 'w') as fd:
-            for line in lines:
-                fd.write(line)
+        matches = 0
 
-    update_version(version)
+        with open(path) as fd:
+            for line in fd:
+                if line.startswith(pattern):
+                    line = replacement.rstrip() + '\n'
+                    matches += 1
+                lines.append(line)
+
+        assert matches == 1, 'Should only match one line!'
+        path.write(''.join(lines))
+
+    match_and_edit_version(
+        versionfile,
+        pattern='__version__ = ',
+        replacement=f"__version__ = '{version}'")
+
+    match_and_edit_version(
+        pyproject,
+        pattern='version = ',
+        replacement=f'version = {version}')
 
     releasenotes = 'doc/releasenotes.rst'
 
@@ -228,4 +238,6 @@ News
 
 
 if __name__ == '__main__':
+    os.environ['LANGUAGE'] = 'C'
+
     main()
