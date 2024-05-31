@@ -21,6 +21,7 @@ import ase
 import ase.units
 from ase.constraints import FixAtoms, FixCartesian, FixedLine, FixedPlane
 from ase.geometry.cell import cellpar_to_cell
+from ase.io.castep.castep_reader import read_castep_castep
 from ase.parallel import paropen
 from ase.spacegroup import Spacegroup
 from ase.utils import atoms_to_spglib_cell, reader
@@ -68,9 +69,7 @@ for d in (units_CODATA1986, units_CODATA2002):
 
 __all__ = [
     # routines for the generic io function
-    'read_castep',
     'read_castep_castep',
-    'read_castep_castep_old',
     'read_cell',
     'read_castep_cell',
     'read_geom',
@@ -782,145 +781,6 @@ def read_castep_cell(fd, index=None, calculator_args={}, find_spg=False,
     atoms.calc.push_oldstate()
 
     return atoms
-
-
-def read_castep(filename, index=None):
-    """
-    Wrapper function for the more generic read() functionality.
-
-    Note that this is function is intended to maintain backwards-compatibility
-    only.
-    """
-    from ase.io import read
-    return read(filename, index=index, format='castep-castep')
-
-
-def read_castep_castep(fd, index=None):
-    """
-    Reads a .castep file and returns an atoms  object.
-    The calculator information will be stored in the calc attribute.
-
-    There is no use of the "index" argument as of now, it is just inserted for
-    convenience to comply with the generic "read()" in ase.io
-
-    Please note that this routine will return an atom ordering as found
-    within the castep file. This means that the species will be ordered by
-    ascending atomic numbers. The atoms witin a species are ordered as given
-    in the original cell file.
-
-    Note: This routine returns a single atoms_object only, the last
-    configuration in the file. Yet, if you want to parse an MD run, use the
-    novel function `read_md()`
-    """
-
-    from ase.calculators.castep import Castep
-
-    try:
-        calc = Castep()
-    except Exception as e:
-        # No CASTEP keywords found?
-        warnings.warn(f'WARNING: {e} Using fallback .castep reader...')
-        # Fall back on the old method
-        return read_castep_castep_old(fd, index)
-
-    calc.read(castep_file=fd)
-
-    # now we trick the calculator instance such that we can savely extract
-    # energies and forces from this atom. Basically what we do is to trick the
-    # internal routine calculation_required() to always return False such that
-    # we do not need to re-run a CASTEP calculation.
-    #
-    # Probably we can solve this with a flag to the read() routine at some
-    # point, but for the moment I do not want to change too much in there.
-    calc._old_atoms = calc.atoms
-    calc._old_param = calc.param
-    calc._old_cell = calc.cell
-
-    return [calc.atoms]  # Returning in the form of a list for next()
-
-
-def read_castep_castep_old(fd, index=None):
-    """
-    DEPRECATED
-    Now replaced by ase.calculators.castep.Castep.read(). Left in for future
-    reference and backwards compatibility needs, as well as a fallback for
-    when castep_keywords.py can't be created.
-
-    Reads a .castep file and returns an atoms  object.
-    The calculator information will be stored in the calc attribute.
-    If more than one SCF step is found, a list of all steps
-    will be stored in the traj attribute.
-
-    Note that the index argument has no effect as of now.
-
-    Please note that this routine will return an atom ordering as found
-    within the castep file. This means that the species will be ordered by
-    ascending atomic numbers. The atoms witin a species are ordered as given
-    in the original cell file.
-    """
-    from ase.calculators.singlepoint import SinglePointCalculator
-
-    lines = fd.readlines()
-
-    traj = []
-    energy_total = None
-    energy_0K = None
-    for i, line in enumerate(lines):
-        if 'NB est. 0K energy' in line:
-            energy_0K = float(line.split()[6])
-        # support also for dispersion correction
-        elif 'NB dispersion corrected est. 0K energy*' in line:
-            energy_0K = float(line.split()[-2])
-        elif 'Final energy, E' in line:
-            energy_total = float(line.split()[4])
-        elif 'Dispersion corrected final energy' in line:
-            pass
-            # dispcorr_energy_total = float(line.split()[-2])
-            # sedc_apply = True
-        elif 'Dispersion corrected final free energy' in line:
-            pass  # dispcorr_energy_free = float(line.split()[-2])
-        elif 'dispersion corrected est. 0K energy' in line:
-            pass  # dispcorr_energy_0K = float(line.split()[-2])
-        elif 'Unit Cell' in line:
-            cell = [x.split()[0:3] for x in lines[i + 3:i + 6]]
-            cell = np.array([[float(col) for col in row] for row in cell])
-        elif 'Cell Contents' in line:
-            geom_starts = i
-            start_found = False
-            for j, jline in enumerate(lines[geom_starts:]):
-                if jline.find('xxxxx') > 0 and start_found:
-                    geom_stop = j + geom_starts
-                    break
-                if jline.find('xxxx') > 0 and not start_found:
-                    geom_start = j + geom_starts + 4
-                    start_found = True
-            species = [line.split()[1] for line in lines[geom_start:geom_stop]]
-            geom = np.dot(np.array([[float(col) for col in line.split()[3:6]]
-                                    for line in lines[geom_start:geom_stop]]),
-                          cell)
-        elif 'Writing model to' in line:
-            atoms = ase.Atoms(
-                cell=cell,
-                pbc=True,
-                positions=geom,
-                symbols=''.join(species))
-            # take 0K energy where available, else total energy
-            if energy_0K:
-                energy = energy_0K
-            else:
-                energy = energy_total
-            # generate a minimal single-point calculator
-            sp_calc = SinglePointCalculator(atoms=atoms,
-                                            energy=energy,
-                                            forces=None,
-                                            magmoms=None,
-                                            stress=None)
-            atoms.calc = sp_calc
-            traj.append(atoms)
-    if index is None:
-        return traj
-    else:
-        return traj[index]
 
 
 def read_geom(filename, index=':', units=units_CODATA2002):
