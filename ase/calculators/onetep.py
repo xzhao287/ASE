@@ -139,7 +139,6 @@ class Onetep(GenericFileIOCalculator):
             *,
             profile=None,
             directory='.',
-            parallel_info=None,
             **kwargs):
 
         self.keywords = kwargs.get('keywords', None)
@@ -157,5 +156,4 @@ class Onetep(GenericFileIOCalculator):
 
         super().__init__(profile=profile, template=self.template,
                          directory=directory,
-                         parameters=kwargs,
-                         parallel_info=parallel_info)
+                         parameters=kwargs)

@@ -83,11 +83,7 @@ class Octopus(GenericFileIOCalculator):
 
     The label is always assumed to be a directory."""
 
-    def __init__(self,
-                 profile=None,
-                 directory='.',
-                 parallel_info=None,
-                 **kwargs):
+    def __init__(self, profile=None, directory='.', **kwargs):
         """Create Octopus calculator.
 
         Label is always taken as a subdirectory.
@@ -96,8 +92,7 @@ class Octopus(GenericFileIOCalculator):
         super().__init__(profile=profile,
                          template=OctopusTemplate(),
                          directory=directory,
-                         parameters=kwargs,
-                         parallel_info=parallel_info)
+                         parameters=kwargs)
 
     @classmethod
     def recipe(cls, **kwargs):
