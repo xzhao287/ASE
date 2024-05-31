@@ -109,7 +109,7 @@ class Abinit(GenericFileIOCalculator):
     The default parameters are very close to those that the ABINIT
     Fortran code would use.  These are the exceptions::
 
-      calc = Abinit(label='abinit', xc='LDA', ecut=400, toldfe=1e-5)
+      calc = Abinit(xc='LDA', ecut=400, toldfe=1e-5)
     """
 
     def __init__(
@@ -117,16 +117,9 @@ class Abinit(GenericFileIOCalculator):
         *,
         profile=None,
         directory='.',
-        parallel_info=None,
         **kwargs,
     ):
         """Construct ABINIT-calculator object.
-
-        Parameters
-        ==========
-        label: str
-            Prefix to use for filenames (label.in, label.txt, ...).
-            Default is 'abinit'.
 
         Examples
         ========
@@ -142,6 +135,5 @@ class Abinit(GenericFileIOCalculator):
             template=AbinitTemplate(),
             profile=profile,
             directory=directory,
-            parallel_info=parallel_info,
             parameters=kwargs,
         )

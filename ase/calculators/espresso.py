@@ -114,7 +114,6 @@ class Espresso(GenericFileIOCalculator):
         command=GenericFileIOCalculator._deprecated,
         label=GenericFileIOCalculator._deprecated,
         directory='.',
-        parallel_info=None,
         **kwargs,
     ):
         """
@@ -167,6 +166,5 @@ class Espresso(GenericFileIOCalculator):
             profile=profile,
             template=template,
             directory=directory,
-            parallel_info=parallel_info,
             parameters=kwargs,
         )

@@ -258,7 +258,6 @@ class ExcitingGroundStateCalculator(GenericFileIOCalculator):
         directory='./',
         species_path='./',
         title='ASE-generated input',
-        parallel_info=None,
     ):
         self.runner = runner
         # Package data to be passed to
@@ -284,5 +283,4 @@ class ExcitingGroundStateCalculator(GenericFileIOCalculator):
             template=ExcitingGroundStateTemplate(),
             directory=directory,
             parameters=self.exciting_inputs,
-            parallel_info=parallel_info,
         )

@@ -184,7 +184,7 @@ class CalculatorTemplate(ABC):
         ...
 
     @abstractmethod
-    def load_profile(self, cfg, parallel_info=None):
+    def load_profile(self, cfg):
         ...
 
     def socketio_calculator(
