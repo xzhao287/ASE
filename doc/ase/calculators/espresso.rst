@@ -34,7 +34,8 @@ in the directory specified by the ``pseudo_dir`` parameter.
 
 A recommended list of pseudopotentials is the SSSP curated set, which can be
 found on `Materials Cloud <https://www.materialscloud.org
-/discover/sssp/table/efficiency>`_. With the all of the above in mind, a simple calculation can be set up like so:
+/discover/sssp/table/efficiency>`_.
+With the all of the above in mind, a simple calculation can be set up like so:
 
 .. code-block:: python
 
@@ -47,6 +48,7 @@ found on `Materials Cloud <https://www.materialscloud.org
   # Pseudopotentials from SSSP Efficiency v1.3.0
   pseudopotentials = {'Na': 'na_pbe_v1.5.uspp.F.UPF', 'Cl': 'cl_pbe_v1.4.uspp.F.UPF'}
 
+  # Optionally create profile to override paths in ASE configuration:
   profile = EspressoProfile(
       command='/path/to/pw.x', pseudo_dir='/path/to/pseudopotentials'
   )
