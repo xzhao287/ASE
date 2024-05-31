@@ -36,20 +36,14 @@ more info).
 Setup and usage
 ===============
 
-.. highlight:: bash
-
-The default command that ASE will use to start ORCA is
-``orca PREFIX.inp > PREFIX.out``.
-
-For parallel calculations, you will need to specify the full path to the ORCA
-executable. This can be done by defining an ``OrcaProfile`` like the example below::
+Orca can be configured using the configfile like other calculators.
+If you need to override it for programmatic control of the orca
+command, you can manually create an ``OrcaProfile``::
 
   from ase.calculators.orca import OrcaProfile
 
-  MyOrcaProfile = OrcaProfile(["/full/path/to/my/orca"])
-  calc = ORCA(profile=MyOrcaProfile)
-
-.. highlight:: python
+  profile = OrcaProfile(command='/full/path/to/my/orca')
+  calc = ORCA(profile=profile)
 
 ORCA decides which sub-processes to parallelize via MPI by itself, so you'll
 almost always want a string in your ``orcablocks`` specifying the number of
