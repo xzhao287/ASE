@@ -19,9 +19,8 @@ class CLICommand:
         parser.add_argument('--formats', action='store_true',
                             help='List file formats known to ASE.')
         parser.add_argument('--calculators', nargs='*', metavar='NAME',
-                            help='List all calculators known to ASE '
-                            'and their configuration. Specify names of '
-                            'calculators to show only those.')
+                            help='List all or specified calculators known to '
+                            'ASE and their configuration.')
 
     @staticmethod
     def run(args):
