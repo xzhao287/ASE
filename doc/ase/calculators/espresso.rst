@@ -20,12 +20,10 @@ Calculator
 Basic usage
 -----------
 
-Calculations using the Espresso calculator can be run by defining an 
-``EspressoProfile`` and setting up an ``Espresso`` calculator with it:
-
 Any calculation will need pseudopotentials for the elements involved. The
-directory for the pseudopotential files can be set with the ``pseudo_dir``
-parameter in the EspressoProfile. Pseudopotential files can be passed
+default directory for the pseudopotential files can be set with the ``pseudo_dir``
+parameter in the ASE configuration.  Use ``ase info --calculators espresso``
+Pseudopotential files can be passed
 to the calculator as a dictionary, where the keys are the element and values
 are the pseudopotential file names. The pseudopotential file names must be
 in the directory specified by the ``pseudo_dir`` parameter.
@@ -36,7 +34,8 @@ in the directory specified by the ``pseudo_dir`` parameter.
 
 A recommended list of pseudopotentials is the SSSP curated set, which can be
 found on `Materials Cloud <https://www.materialscloud.org
-/discover/sssp/table/efficiency>`_. With the all of the above in mind, a simple calculation can be set up like so:
+/discover/sssp/table/efficiency>`_.
+With the all of the above in mind, a simple calculation can be set up like so:
 
 .. code-block:: python
 
@@ -44,13 +43,14 @@ found on `Materials Cloud <https://www.materialscloud.org
   from ase.calculators.espresso import Espresso, EspressoProfile
   from ase.optimize import LBFGS
 
-  rocksalt = bulk("NaCl", crystalstructure="rocksalt", a=6.0)
+  rocksalt = bulk('NaCl', crystalstructure='rocksalt', a=6.0)
 
   # Pseudopotentials from SSSP Efficiency v1.3.0
-  pseudopotentials = {"Na": "na_pbe_v1.5.uspp.F.UPF", "Cl": "cl_pbe_v1.4.uspp.F.UPF"}
+  pseudopotentials = {'Na': 'na_pbe_v1.5.uspp.F.UPF', 'Cl': 'cl_pbe_v1.4.uspp.F.UPF'}
 
+  # Optionally create profile to override paths in ASE configuration:
   profile = EspressoProfile(
-      binary="/path/to/pw.x", pseudo_dir="/path/to/pseudopotentials"
+      command='/path/to/pw.x', pseudo_dir='/path/to/pseudopotentials'
   )
 
   calc = Espresso(profile=profile, pseudopotentials=pseudopotentials)
@@ -92,8 +92,8 @@ defaults of QE.
 .. code-block:: python
 
   input_data = {
-      "system": {"ecutwfc": 60, "ecutrho": 480},
-      "disk_io": "low",  # Automatically put into the 'control' section
+      'system': {'ecutwfc': 60, 'ecutrho': 480},
+      'disk_io': 'low',  # Automatically put into the 'control' section
   }
 
   calc = Espresso(
@@ -120,22 +120,20 @@ constraints. Some parameters are used by ASE and have additional meaning:
 Parallelism
 -----------
 
-The above ``calc`` object will run the ``pw.x`` executable on 1 core. parallelism
-can be set by providing a ``parallel_info`` dictionary to the ``EspressoProfile``.
+The above ``calc`` object will run the ``pw.x`` executable using the command
+specified by the ASE configuration.  Parallelism
+can be customized by manually creating an ``EspressoProfile``.
 Currently there is no way to specify the parallelization keywords for QE, such
 as ``-nk``. This is a current limitation of the ASE calculator interface.
 
 .. code-block:: python
 
-  parallel_info = {"binary": "mpirun", "np": 16, "-v": True}
-
   profile = EspressoProfile(
-      binary="/path/to/pw.x",
-      pseudo_dir="/path/to/pseudopotentials",
-      parallel_info=parallel_info,
+      command='mpiexec -n 16 /path/to/pw.x',
+      pseudo_dir='/path/to/pseudopotentials',
   )
 
-  # This will run "mpirun -np 16 -v /path/to/pw.x"
+  # This will run 'mpirun -np 16 -v /path/to/pw.x'
 
 Input/Output
 ============
@@ -163,38 +161,38 @@ These two main functions are wrappers around the :func:`ase.io.espresso.write_es
   from ase.io.espresso import write_espresso_in
 
   input_data = {
-      "calculation": "relax",
-      "restart_mode": "from_scratch",
-      "tprnfor": True,
-      "etot_conv_thr": 1e-5,
-      "forc_conv_thr": 1e-4,
-      "ecutwfc": 60,
-      "ecutrho": 480,
-      "input_dft": "rpbe",
-      "vdw_corr": "dft-d3",
-      "occupations": "smearing",
-      "degauss": 0.01,
-      "smearing": "cold",
-      "conv_thr": 1e-8,
-      "mixing_mode": "local-TF",
-      "mixing_beta": 0.35,
-      "diagonalization": "david",
-      "ion_dynamics": "bfgs",
-      "bfgs_ndim": 6,
-      "startingwfc": "random",
+      'calculation': 'relax',
+      'restart_mode': 'from_scratch',
+      'tprnfor': True,
+      'etot_conv_thr': 1e-5,
+      'forc_conv_thr': 1e-4,
+      'ecutwfc': 60,
+      'ecutrho': 480,
+      'input_dft': 'rpbe',
+      'vdw_corr': 'dft-d3',
+      'occupations': 'smearing',
+      'degauss': 0.01,
+      'smearing': 'cold',
+      'conv_thr': 1e-8,
+      'mixing_mode': 'local-TF',
+      'mixing_beta': 0.35,
+      'diagonalization': 'david',
+      'ion_dynamics': 'bfgs',
+      'bfgs_ndim': 6,
+      'startingwfc': 'random',
   }  # This flat dictionary will be converted to a nested dictionary where, for example, "calculation" will be put into the "control" section
 
-  write("pw.in", atoms, input_data=input_data, format="espresso-in")
+  write('pw.in', atoms, input_data=input_data, format='espresso-in')
 
   # Hubbard is not implemented in the write_espresso_in function, we can add it manually
-  additional_cards = ["HUBBARD (ortho-atomic)", "U Mn-3d 5.0", "U Ni-3d 6.0"]
+  additional_cards = ['HUBBARD (ortho-atomic)', 'U Mn-3d 5.0', 'U Ni-3d 6.0']
 
   write(
-      "pw_hubbard.in",
+      'pw_hubbard.in',
       atoms,
       input_data=input_data,
       additional_cards=additional_cards,
-      format="espresso-in",
+      format='espresso-in',
   )
 
 .. autofunction:: ase.io.espresso.read_espresso_out
@@ -224,7 +222,7 @@ As of January 2024, ``ph.x`` has custom read and write functions in ASE. The fun
 
   qpts = [(0.0, 0.0, 0.0), (0.5, 0.5, 0.5), (0.5, 0.5, 0.0), (0.0, 0.0, 0.5)]
 
-  write_espresso_ph("input_ph.in", input_data, qpts=qpts) # Will automatically be built to nested format
+  write_espresso_ph('input_ph.in', input_data, qpts=qpts) # Will automatically be built to nested format
 
 After running the calculation, the output can be read with the :meth:`~ase.io.espresso.read_espresso_ph` method.
 
@@ -234,7 +232,7 @@ After running the calculation, the output can be read with the :meth:`~ase.io.es
 
 .. code-block:: python
 
-  results = read_espresso_ph("ph.out")
+  results = read_espresso_ph('ph.out')
 
   print(results[0]['qpoints']) # Will probably be (0, 0, 0)
   print(results[0]['freq']) # Eigenvalues of the dynamical matrix at the qpoint
@@ -260,12 +258,12 @@ The list of currently implemented executable is available in
   from ase.io.espresso import write_fortran_namelist
 
   # input_data for pp.x, built automatically
-  input_data = {"outdir": "/path/to/output", "prefix": "prefix", "verbosity": "high"}
+  input_data = {'outdir': '/path/to/output', 'prefix': 'prefix', 'verbosity': 'high'}
 
   input_data = Namelist(input_data)
-  input_data.to_nested(binary="pp")
+  input_data.to_nested(binary='pp')
 
-  write_fortran_namelist("input_pp.in", input_data)
+  write_fortran_namelist('input_pp.in', input_data)
 
   # Alternatively, the input_data can be written manually
   # without the need to specify a binary
@@ -275,14 +273,14 @@ The list of currently implemented executable is available in
       'environ_type': 'water',
     ...} # In this case, the ``input_data`` is a nested dictionary
     # since ASE cannot guess the input sections for exotic executables
-  
+
   additional_cards = [
-        "EXTERNAL_CHARGES (bohr)",
-        "-0.5 0. 0. 25.697 1.0 2 3",
-        "-0.5 0. 0. 20.697 1.0 2 3"
+        'EXTERNAL_CHARGES (bohr)',
+        '-0.5 0. 0. 25.697 1.0 2 3',
+        '-0.5 0. 0. 20.697 1.0 2 3'
   ] # This will be added at the end of the file
 
-  write_fortran_namelist("environ.in", input_data)
+  write_fortran_namelist('environ.in', input_data)
 
 The :meth:`~ase.io.espresso.read_fortran_namelist` method will read a fortran namelist file and
 return a tuple, where the first element is the ``input_data`` dictionary and the
@@ -296,7 +294,7 @@ second element is a list of additional cards at the end of the file.
 
   from ase.io.espresso import read_fortran_namelist
 
-  input_data, additional_cards = read_fortran_namelist("input_pp.in")
+  input_data, additional_cards = read_fortran_namelist('input_pp.in')
 
   print(input_data)
   print(additional_cards)

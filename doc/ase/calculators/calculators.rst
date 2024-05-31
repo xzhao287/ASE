@@ -163,38 +163,33 @@ where ``abc`` is the module name and ``ABC`` is the class name.
 Calculator configuration
 ========================
 
-As of November 2023, there are two ways in which a calculator can be implemented:
+Calculators that depend on external codes or files are generally
+configurable.  ASE loads the configuration from a configfile located
+at ``~/.config/ase/config.ini``.  The default path can be overriden by
+setting the environment variable ``ASE_CONFIG_PATH`` to another path
+or paths separated by colon.
 
-  * a modern way -- subclassing a Calculator class from :class:`ase.calculators.genericfileio.GenericFileIOCalculator`
-    (calculators implemented in such a way are ABINIT, FHI-Aims, Quantum ESPESSO, EXCITING, Octopus and Orca; there are
-    plans to gradually rewrite the remaining calculators as well);
-  * a somewhat conservative way, subclassing it from :class:`ase.calculators.calculator.FileIOCalculator`.
+To see the full configuration on a given machine, run
+:command:`ase info --calculators`.
 
-The calculators that are implemented in the modern way can be configured using the config file. It should have a `.ini`
-format and reside in a place specified by ``ASE_CONFIG_PATH`` environmental variable. If the variable is not set, then the
-default path is used, which is ``~/.config/ase/config.ini``.
+An example of a config file is as follows::
 
-The config file should have a ``[parallel]`` section, which defines the machine-specific parallel environment, and the
-calculator sections, that define the machine-specific calculator parameters, like binary and pseudopotential locations.
-The parallel section should have a ``binary`` option, which should point to the name of the parallel runner binary file,
-like `mpirun` or `mpiexec`. Then the Calculator class instance can be initialized with ``parallel=True`` keyword. This
-allows running the calculator code in parallel. The additional keywords to the parallel runner can be specified with
-``parallel_info=<dict>`` keyword, which gets translated to the list of flags and their values passed to the parallel
-runner. Translation keys can be specified in the ``[parallel]`` section with the syntax ``key_kwarg_trans = command``
-e.g if ``nprocs_kwarg_trans = -np`` is specified in the config file, then the key ``nprocs`` will be
-translated to ``-np``. Then `nprocs` can be specified in ``parallel_info`` and will be translated to `-np` when the command is build.
-
-The example of a config file is as follows::
-
-    [parallel]
-    binary = mpirun
-    nprocs_kwarg_trans = -np
+    [abinit]
+    command = mpiexec /usr/bin/abinit
+    pp_paths = /usr/share/abinit/pseudopotentials
 
     [espresso]
-    binary = pw.x
+    command = mpiexec pw.x
     pseudo_path = /home/ase/upf_pseudos
 
-Then the `espresso` calculator can be invoked in the following way::
+Calculators build a full command by appending command-line arguments
+to the configured command.  Therefore, the command should normally consist
+of any parallel arguments followed by the binary, but should not
+include further flags unless desired for a specific reason.
+The command is also used to build a full command for e.g.
+socket I/O calculators.
+
+The Espresso calculator can then invoked in the following way::
 
     >>> from ase.build import bulk
     >>> from ase.calculators.espresso import Espresso
@@ -204,84 +199,20 @@ Then the `espresso` calculator can be invoked in the following way::
                                'ecutwfc': 60,
                             }},
                        pseudopotentials = {'Si': 'si_lda_v1.uspp.F.UPF'},
-                       parallel=True,
-                       parallel_info={'nprocs': 4}
                        )
     >>> si = bulk('Si')
     >>> si.calc = espresso
     >>> si.get_potential_energy()
     -244.76638508140397
 
-Here espresso ran in parallel with 4 processes and produced a correct result.
-
-Calculator keywords
-===================
-
-Example for a hypothetical ABC calculator:
-
-.. class:: ABC(restart=None, ignore_bad_restart_file=False, label=None,
-               atoms=None, parameters=None, command='abc > PREFIX.abc',
-               xc=None, kpts=[1, 1, 1], smearing=None,
-               charge=0.0, nbands=None, **kwargs)
-
-   Create ABC calculator
-
-   restart: str
-       Prefix for restart file.  May contain a directory.  Default
-       is None: don't restart.
-   ignore_bad_restart_file: bool
-       Ignore broken or missing restart file.  By default, it is an
-       error if the restart file is missing or broken.
-   label: str
-       Name used for all files.  May contain a directory.
-   atoms: Atoms object
-       Optional Atoms object to which the calculator will be
-       attached.  When restarting, atoms will get its positions and
-       unit-cell updated from file.
-   command: str
-       Command used to start calculation.  This will override any value
-       in an :envvar:`ASE_ABC_COMMAND` environment variable.
-   parameters: str
-       Read parameters from file.
-   xc: str
-       XC-functional (``'LDA'``, ``'PBE'``, ...).
-   kpts:
-       Brillouin zone sampling:
-
-       * ``(1,1,1)``: Gamma-point
-       * ``(n1,n2,n3)``: Monkhorst-Pack grid
-       * ``(n1,n2,n3,'gamma')``: Shifted Monkhorst-Pack grid that includes
-         `\Gamma`
-       * ``[(k11,k12,k13),(k21,k22,k23),...]``: Explicit list in units of the
-         reciprocal lattice vectors
-       * ``kpts=3.5``: `\vec k`-point density as in 3.5 `\vec k`-points per
-         Å\ `^{-1}`.
-   smearing: tuple
-       The smearing of occupation numbers.  Must be a tuple:
-
-       * ``('Fermi-Dirac', width)``
-       * ``('Gaussian', width)``
-       * ``('Methfessel-Paxton', width, n)``, where `n` is the order
-         (`n=0` is the same as ``'Gaussian'``)
-
-       Lower-case names are also allowed.  The ``width`` parameter is
-       given in eV units.
-   charge: float
-      Charge of the system in units of `|e|` (``charge=1`` means one
-      electron has been removed).  Default is ``charge=0``.
-   nbands: int
-      Number of bands.  Each band can be occupied by two electrons.
-
-Not all of the above arguments make sense for all of ASE's
-calculators.  As an example, Gromacs will not accept DFT related
-keywords such as ``xc`` and ``smearing``.  In addition to the keywords
-mentioned above, each calculator may have native keywords that are
-specific to only that calculator.
-
-Keyword arguments can also be set or changed at a later stage using
-the :meth:`set` method:
-
-.. method:: set(key1=value1, key2=value2, ...)
+It can be useful for software libraries to override the local
+configuration.  To do so, the code should supply the configurable
+information by instantiating a “profile”, e.g.,
+``Abinit(profile=AbinitProfile(command=command))``.  The profile
+encloses the configurable information specific to a particular code,
+so this may differ depending on which code.  It can also be
+useful for software libraries that manage their own configuration
+to set the ``ASE_CONFIG_PATH`` to an empty string.
 
 
 .. toctree::
