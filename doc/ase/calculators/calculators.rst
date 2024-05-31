@@ -203,8 +203,7 @@ The command is also used to build a full command for e.g.
 socket I/O calculators.
 
 To see all configuration on a given system, run
-:command:`python3 -m ase.codes` or e.g. :command:`python3 -m ase.codes
-espresso` for a given calculator.
+:command:`ase info --calculators`.
 
 It can be useful for software libraries to override the local
 configuration.  To do so, the code should supply the configurable
