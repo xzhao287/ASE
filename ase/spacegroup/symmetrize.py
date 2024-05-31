@@ -1,6 +1,8 @@
 """
 Provides utility functions for FixSymmetry class
 """
+from typing import Optional
+
 import numpy as np
 
 from ase.utils import atoms_to_spglib_cell
@@ -31,11 +33,57 @@ def refine_symmetry(atoms, symprec=0.01, verbose=False):
     spglib dataset
 
     """
-    import spglib
+    _check_and_symmetrize_cell(atoms, symprec=symprec, verbose=verbose)
+    _check_and_symmetrize_positions(atoms, symprec=symprec, verbose=verbose)
+    return check_symmetry(atoms, symprec=1e-4, verbose=verbose)
 
-    # test orig config with desired tol
-    dataset = check_symmetry(atoms, symprec, verbose=verbose)
 
+class IntermediateDatasetError(Exception):
+    """The symmetry dataset in `_check_and_symmetrize_positions` can be at odds
+    with the original symmetry dataset in `_check_and_symmetrize_cell`.
+    This implies a faulty partial symmetrization if not handled by exception."""
+
+
+def get_symmetrized_atoms(atoms,
+                          symprec: float = 0.01,
+                          final_symprec: Optional[float] = None):
+    """Get new Atoms object with refined symmetries.
+
+    Checks internal consistency of the found symmetries.
+
+    Parameters
+    ----------
+    atoms : Atoms
+        Input atoms object.
+    symprec : float
+        Symmetry precision used to identify symmetries with spglib.
+    final_symprec : float
+        Symmetry precision used for testing the symmetrization.
+
+    Returns
+    -------
+    symatoms : Atoms
+        New atoms object symmetrized according to the input symprec.
+    """
+    atoms = atoms.copy()
+    original_dataset = _check_and_symmetrize_cell(atoms, symprec=symprec)
+    intermediate_dataset = _check_and_symmetrize_positions(
+        atoms, symprec=symprec)
+    if intermediate_dataset['number'] != original_dataset['number']:
+        raise IntermediateDatasetError()
+    final_symprec = final_symprec or symprec
+    final_dataset = check_symmetry(atoms, symprec=final_symprec)
+    assert final_dataset['number'] == original_dataset['number']
+    return atoms, final_dataset
+
+
+def _check_and_symmetrize_cell(atoms, **kwargs):
+    dataset = check_symmetry(atoms, **kwargs)
+    _symmetrize_cell(atoms, dataset)
+    return dataset
+
+
+def _symmetrize_cell(atoms, dataset):
     # set actual cell to symmetrized cell vectors by copying
     # transformed and rotated standard cell
     std_cell = dataset['std_lattice']
@@ -43,10 +91,19 @@ def refine_symmetry(atoms, symprec=0.01, verbose=False):
     rot_trans_std_cell = trans_std_cell @ dataset['std_rotation_matrix']
     atoms.set_cell(rot_trans_std_cell, True)
 
-    # get new dataset and primitive cell
-    dataset = check_symmetry(atoms, symprec=symprec, verbose=verbose)
+
+def _check_and_symmetrize_positions(atoms, *, symprec, **kwargs):
+    import spglib
+    dataset = check_symmetry(atoms, symprec=symprec, **kwargs)
+    # here we are assuming that primitive vectors returned by find_primitive
+    #    are compatible with std_lattice returned by get_symmetry_dataset
     res = spglib.find_primitive(atoms_to_spglib_cell(atoms), symprec=symprec)
-    prim_cell, prim_scaled_pos, prim_types = res
+    _symmetrize_positions(atoms, dataset, res)
+    return dataset
+
+
+def _symmetrize_positions(atoms, dataset, primitive_spglib_cell):
+    prim_cell, prim_scaled_pos, prim_types = primitive_spglib_cell
 
     # calculate offset between standard cell and actual cell
     std_cell = dataset['std_lattice']
@@ -63,8 +120,6 @@ def refine_symmetry(atoms, symprec=0.01, verbose=False):
 
     # find ideal positions from position of corresponding std cell atom +
     #    integer_vec . primitive cell vectors
-    # here we are assuming that primitive vectors returned by find_primitive
-    #    are compatible with std_lattice returned by get_symmetry_dataset
     mapping_to_primitive = list(dataset['mapping_to_primitive'])
     std_mapping_to_primitive = list(dataset['std_mapping_to_primitive'])
     pos = atoms.get_positions()
@@ -74,9 +129,6 @@ def refine_symmetry(atoms, symprec=0.01, verbose=False):
         dp_s = dp @ inv_rot_prim_cell
         pos[i_at] = (aligned_std_pos[std_i_at] - np.round(dp_s) @ rot_prim_cell)
     atoms.set_positions(pos)
-
-    # test final config with tight tol
-    return check_symmetry(atoms, symprec=1e-4, verbose=verbose)
 
 
 def check_symmetry(atoms, symprec=1.0e-6, verbose=False):
