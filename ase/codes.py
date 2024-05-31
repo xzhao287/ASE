@@ -199,11 +199,11 @@ def list_codes(names):
 
     for name in names:
         code = codes[name]
+        print(code.name)
         try:
-            print(code.name)
             print(code.description(indent='  '))
         except Exception as ex:
-            raise RuntimeError(code) from ex
+            print(f'Bad configuration of {name}: {ex!r}')
         print()
 
 
