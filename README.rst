@@ -13,14 +13,12 @@ Requirements
 * Python_ 3.8 or later
 * NumPy_ (base N-dimensional array package)
 * SciPy_ (library for scientific computing)
+* Matplotlib_ (2D Plotting)
 
 Optional:
 
-
-* For ASE's GUI: Matplotlib_ (2D Plotting)
-* tkinter (for ase.gui)
 * Flask (for ase.db web-interface)
-
+* spglib_ (for symmetry operations)
 
 Installation
 ------------
@@ -97,6 +95,7 @@ This example requires NWChem to be installed.
 .. _NumPy: http://docs.scipy.org/doc/numpy/reference/
 .. _SciPy: http://docs.scipy.org/doc/scipy/reference/
 .. _Matplotlib: http://matplotlib.org/
+.. _spglib: https://github.com/spglib/spglib
 .. _ase-users: https://listserv.fysik.dtu.dk/mailman/listinfo/ase-users
 .. _Matrix: https://matrix.to/#/!JEiuNJLuxedbohAOuH:matrix.org
 .. _Element: https://app.element.io/#/room/#ase:matrix.org
