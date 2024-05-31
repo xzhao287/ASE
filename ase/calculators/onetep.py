@@ -14,9 +14,7 @@ from ase.io import read, write
 
 class OnetepProfile(BaseProfile):
     """
-    ONETEP profile class, additional "old" parameter
-    is automatically passed for now if the user uses the
-    now deprecated "ASE_ONETEP_COMMAND".
+    ONETEP profile class.
     """
 
     def __init__(self, command, **kwargs):
@@ -25,9 +23,6 @@ class OnetepProfile(BaseProfile):
         ----------
         command: str
             The onetep command (not including inputfile).
-        old: bool
-            If True, will use the old ASE_ONETEP_COMMAND
-            interface.
         **kwargs: dict
             Additional kwargs are passed to the BaseProfile
             class.
