@@ -111,7 +111,7 @@ class Config(Mapping):
             )
             print(msg)
 
-    def print_everything(self):
+    def print_header(self):
         print("Configuration")
         print("-------------")
         print()
@@ -120,15 +120,6 @@ class Config(Mapping):
 
         for path in self.paths:
             print(f"Loaded: {path}")
-
-        print()
-        for name, section in self.parser.items():
-            print(name)
-            if not section:
-                print("  (Nothing configured)")
-            for key, val in section.items():
-                print(f"  {key}: {val}")
-            print()
 
     def as_dict(self):
         return {key: dict(val) for key, val in self.parser.items()}
