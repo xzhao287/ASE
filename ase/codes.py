@@ -193,6 +193,10 @@ codes = register_codes()
 
 
 def list_codes(names):
+    from ase.config import cfg
+    cfg.print_header()
+    print()
+
     for name in names:
         code = codes[name]
         try:
