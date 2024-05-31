@@ -166,8 +166,11 @@ Calculator configuration
 Calculators that depend on external codes or files are generally
 configurable.  ASE loads the configuration from a configfile located
 at ``~/.config/ase/config.ini``.  The default path can be overriden by
-setting the environment variable ``ASE_CONFIG_PATH`` to one or more
-paths separated by colon.
+setting the environment variable ``ASE_CONFIG_PATH`` to another path
+or paths separated by colon.
+
+To see the full configuration on a given machine, run
+:command:`ase info --calculators`.
 
 An example of a config file is as follows::
 
@@ -179,7 +182,14 @@ An example of a config file is as follows::
     command = mpiexec pw.x
     pseudo_path = /home/ase/upf_pseudos
 
-Then the Espresso calculator can then invoked in the following way::
+Calculators build a full command by appending command-line arguments
+to the configured command.  Therefore, the command should normally consist
+of any parallel arguments followed by the binary, but should not
+include further flags unless desired for a specific reason.
+The command is also used to build a full command for e.g.
+socket I/O calculators.
+
+The Espresso calculator can then invoked in the following way::
 
     >>> from ase.build import bulk
     >>> from ase.calculators.espresso import Espresso
@@ -194,16 +204,6 @@ Then the Espresso calculator can then invoked in the following way::
     >>> si.calc = espresso
     >>> si.get_potential_energy()
     -244.76638508140397
-
-Calculators build a full command by appending command-line arguments
-to the configured command.  Therefore, the command should consist of
-any parallel configuration followed by the binary, but should not
-include further flags unless desired for a specific reason.
-The command is also used to build a full command for e.g.
-socket I/O calculators.
-
-To see all configuration on a given system, run
-:command:`ase info --calculators`.
 
 It can be useful for software libraries to override the local
 configuration.  To do so, the code should supply the configurable
