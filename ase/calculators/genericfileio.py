@@ -14,21 +14,8 @@ from ase.config import cfg as _cfg
 class BaseProfile(ABC):
     configvars: Set[str] = set()
 
-    def __init__(self, command=None, parallel_info=None):
-        """
-        Parameters
-        ----------
-        parallel_info : dict
-            Additional settings for parallel execution, e.g. arguments
-            for the binary for parallelization (mpiexec, srun, mpirun).
-        """
-
+    def __init__(self, command):
         self.command = _validate_command(command)
-
-        if parallel_info is None:
-            parallel_info = {}
-
-        self.parallel_info = parallel_info
 
     @property
     def _split_command(self):
@@ -48,33 +35,9 @@ class BaseProfile(ABC):
         list of str
             The command to run.
         """
-        if 'binary' not in self.parallel_info:
-            if calc_command is None:
-                calc_command = self.get_calculator_command(inputfile)
-            return [*self._split_command, *calc_command]
-
-        # (This way to handle parallel info will change.)
-        command = [self.parallel_info['binary']]
-
-        for key, value in self.parallel_info.items():
-            if key == 'binary':
-                continue
-
-            command_key = key
-
-            if type(value) is not bool:
-                command.append(f'{command_key}')
-                command.append(f'{value}')
-            elif value:
-                command.append(f'{command_key}')
-
-        command += self._split_command
-
         if calc_command is None:
-            command.extend(self.get_calculator_command(inputfile))
-        else:
-            command.extend(calc_command)
-        return command
+            calc_command = self.get_calculator_command(inputfile)
+        return [*self._split_command, *calc_command]
 
     @abstractmethod
     def get_calculator_command(self, inputfile):
@@ -146,7 +109,7 @@ class BaseProfile(ABC):
         """
 
     @classmethod
-    def from_config(cls, cfg, section_name, parallel_info=None):
+    def from_config(cls, cfg, section_name):
         """Create a profile from a configuration file.
 
         Parameters
@@ -162,14 +125,6 @@ class BaseProfile(ABC):
         BaseProfile
             The profile object.
         """
-        try:
-            parallel_config = dict(cfg.parser['parallel'])
-        except KeyError:
-            parallel_config = {}
-
-        parallel_info = parallel_info if parallel_info is not None else {}
-        parallel_config.update(parallel_info)
-
         section = cfg.parser[section_name]
         command = section['command']
 
@@ -177,9 +132,6 @@ class BaseProfile(ABC):
             varname: section[varname]
             for varname in cls.configvars if varname in section
         }
-
-        if 'binary' in parallel_config:
-            kwargs['parallel_info'] = parallel_config
 
         try:
             return cls(command=command, **kwargs)
@@ -315,16 +267,13 @@ class GenericFileIOCalculator(BaseCalculator, GetOutputsMixin):
         profile,
         directory,
         parameters=None,
-        parallel_info=None,
     ):
         self.template = template
         if profile is None:
             if template.name not in self.cfg.parser:
                 raise BadConfiguration(f'No configuration of {template.name}')
             try:
-                profile = template.load_profile(
-                    self.cfg, parallel_info=parallel_info,
-                )
+                profile = template.load_profile(self.cfg)
             except Exception as err:
                 configvars = self.cfg.as_dict()
                 raise BadConfiguration(
