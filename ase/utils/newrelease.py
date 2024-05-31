@@ -46,12 +46,9 @@ def git(cmd, error_ok=False):
 
 
 versionfile = Path(ase.__file__)
-assert versionfile.name == '__init__.py'
 
 ase_toplevel = versionfile.parent.parent
 pyproject = ase_toplevel / 'pyproject.toml'
-
-assert ase_toplevel == Path.cwd()
 
 
 def get_version():
@@ -245,6 +242,8 @@ News
 
 
 if __name__ == '__main__':
+    assert versionfile.name == '__init__.py'
+    assert ase_toplevel == Path.cwd()
     os.environ['LANGUAGE'] = 'C'
 
     main()
