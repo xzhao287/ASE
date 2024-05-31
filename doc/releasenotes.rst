@@ -9,6 +9,14 @@ Git master branch
 
 :git:`master <>`.
 
+* No changes yet
+
+
+Version 3.23.0
+==============
+
+31 May 2024: :git:`3.23.0 <../3.23.0>`
+
 * Add :class:`~ase.constraints.FixSubsetCom` to fix the center of mass of the
   specified subset of atoms (:mr:`3193`).
 
