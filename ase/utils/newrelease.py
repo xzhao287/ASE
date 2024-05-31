@@ -119,7 +119,7 @@ def main():
     match_and_edit_version(
         pyproject,
         pattern='version = ',
-        replacement=f'version = {version}')
+        replacement=f"version = '{version}'")
 
     releasenotes = ase_toplevel / 'doc/releasenotes.rst'
 
