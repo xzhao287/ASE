@@ -250,7 +250,7 @@ class Gromacs(FileIOCalculator):
                 '-g', self.label + '.log',
                 '-c', self.label + '.g96',
                 self.params_runs.get('extra_mdrun_parameters', ''),
-                '> MM.log 2>&1']
+                '> MM_test.log 2>&1']
             command = ' '.join(command)
             self._execute_gromacs(command)
 
@@ -368,7 +368,7 @@ class Gromacs(FileIOCalculator):
             'pbc', 'initial_charges' and 'initial_magmoms'.
 
         """
-
+        print("test string")
         self.run()
         if self.clean:
             do_clean('#*')
