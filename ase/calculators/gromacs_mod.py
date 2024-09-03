@@ -21,7 +21,7 @@ import subprocess
 from glob import glob
 
 import numpy as np
-
+from ase import Atoms
 from ase import units
 from ase.calculators.calculator import (CalculatorSetupError, FileIOCalculator,
                                         all_changes)
@@ -91,17 +91,18 @@ class Gromacs(FileIOCalculator):
         vdwtype='shift',
         rvdw='0.8',
         rvdw_switch='0.75',
-        DispCorr='Ener',
-        ASEs_gmxfolder='./',
-        c_name=None,
-        p_name=None,
-        f_name=None)
+        DispCorr='Ener'
+        )
 
     def __init__(self, restart=None,
                  ignore_bad_restart_file=FileIOCalculator._deprecated,
                  label='gromacs', atoms=None,
                  do_qmmm=False, clean=True,
-                 water_model='tip3p', force_field='oplsaa', command=None,
+                 water_model='tip3p', force_field='oplsaa', command=None, ASEs_gmxfolder=None,
+                 cname=None,
+                 pname=None,
+                 fname=None,
+                 nname=None,
                  **kwargs):
         """Construct GROMACS-calculator object.
 
@@ -147,11 +148,33 @@ class Gromacs(FileIOCalculator):
         self.atoms = None
 
         FileIOCalculator.__init__(self, restart, ignore_bad_restart_file,
-                                  label, atoms, command=command,
+                                  label, atoms, command=command, ASEs_gmxfolder=ASEs_gmxfolder,
+                 cname=cname,
+                 pname=pname,
+                 fname=fname,
+                 nname=nname,
                                   **kwargs)
         self.set(**kwargs)
         # default values for runtime parameters
         # can be changed by self.set_own_params_runs('key', 'value')
+        if ASEs_gmxfolder is None:
+            ASEs_gmxfolder = './'
+        if cname is None:
+            cname = 'conf.gro'
+        if fname is None:
+            fname = 'params.mdp'
+        if pname is None:
+            pname = 'topol.top'
+        if nname is None:
+            nname = 'index.ndx'
+
+        self.ASEs_gmxfolder = ASEs_gmxfolder
+        self.cname = ASEs_gmxfolder + cname
+        self.fname = ASEs_gmxfolder + fname
+        self.pname = ASEs_gmxfolder + pname
+        self.nname = ASEs_gmxfolder + nname
+        # later add sanity check if needed files are present, for QM/MM calcs index files are also needed
+
         self.params_runs = {}
         self.params_runs['index_filename'] = 'index.ndx'
         self.params_runs['init_structure'] = self.label + '.pdb'
@@ -262,14 +285,8 @@ class Gromacs(FileIOCalculator):
             atoms = read_gromos(self.label + '.g96')
             self.atoms = atoms.copy()
 
-    def run_with_grompp(self, fname=None,
-                              cname=None,
-                              pname=None,
-                              ASEs_gmxfolder='./'):
-        self.generate_gromacs_run_file(f_name=fname,
-                                       c_name=cname,
-                                       p_name=pname,
-                                       ASEs_gmxfolder=ASEs_gmxfolder)
+    def run_with_grompp(self):
+        self.generate_gromacs_run_file()
         self.run()
 
     def generate_topology_and_g96file(self):
@@ -295,21 +312,14 @@ class Gromacs(FileIOCalculator):
         atoms = read_gromos(self.label + '.g96')
         self.atoms = atoms.copy()
 
-    def generate_gromacs_run_file(self,
-                                  f_name=None,
-                                  c_name=None,
-                                  p_name=None,
-                                  ASEs_gmxfolder='./'):
+    def generate_gromacs_run_file(self):
         """ Generates input file for a gromacs mdrun
         based on structure file and topology file
         resulting file is self.label + '.tpr
         """
-        if f_name is None:
-            f_name = self.label
-        if c_name is None:
-            c_name = self.label
-        if p_name is None:
-            p_name = self.label
+        f_name = self.fname
+        c_name = self.cname
+        p_name = self.pname
         # generate gromacs run input file (gromacs.tpr)
         try:
             os.remove(self.label + '.tpr')
@@ -319,9 +329,9 @@ class Gromacs(FileIOCalculator):
         subcmd = 'grompp'
         command = ' '.join([
             subcmd,
-            '-f', ASEs_gmxfolder + f_name + '.mdp',
-            '-c', ASEs_gmxfolder + c_name + '.gro',
-            '-p', ASEs_gmxfolder + p_name + '.top',
+            '-f', f_name,
+            '-c', c_name,
+            '-p', p_name,
             '-o', self.label + '.tpr',
             '-maxwarn', '100',
             self.params_runs.get('extra_grompp_parameters', ''),
@@ -403,7 +413,7 @@ class Gromacs(FileIOCalculator):
                         velocities=velocities)
         return gmx_system
 
-    def update_gro(fileobj, atoms):
+    def update_gro(self, fileobj, filetgt, atoms):
         """Write gromos geometry files (.gro).
         Writes:
         atom positions,
@@ -414,29 +424,25 @@ class Gromacs(FileIOCalculator):
         coords = atoms.get_positions() / 10.0
         vels = atoms.get_velocities() / 10.0
         with open(fileobj, 'r') as gro:
-            for line in gro:
-                linenum += 1
-                atomnum = linenum-3
-                if linenum > 2 and len(line.split())>6:
-                    newline = f'{line[:20]}'
-                    coord_str  = f'{coords[atomnum][0]:8.3f}'
-                    coord_str += f'{coords[atomnum][1]:8.3f}'
-                    coord_str += f'{coords[atomnum][2]:8.3f}'
-                    vel_str  = f'{vels[atomnum][0]:8.4f}'
-                    vel_str += f'{vels[atomnum][1]:8.4f}'
-                    vel_str += f'{vels[atomnum][2]:8.4f}'
-                    newline += coord_str + vel_str
-                    print(newline)
-                else:
-                    print(line, end='')
-
+            with open(filetgt, 'w') as grotgt:
+                for line in gro:
+                    linenum += 1
+                    atomnum = linenum-3
+                    if linenum > 2 and len(line.split())>6:
+                        newline = f'{line[:20]}'
+                        coord_str  = f'{coords[atomnum][0]:8.3f}'
+                        coord_str += f'{coords[atomnum][1]:8.3f}'
+                        coord_str += f'{coords[atomnum][2]:8.3f}'
+                        vel_str  = f'{vels[atomnum][0]:8.4f}'
+                        vel_str += f'{vels[atomnum][1]:8.4f}'
+                        vel_str += f'{vels[atomnum][2]:8.4f}\n'
+                        newline += coord_str + vel_str
+                        grotgt.write(newline)
+                    else:
+                        grotgt.write(line)
 
     def calculate(self, atoms=None, properties=['energy', 'forces'],
-                  system_changes=all_changes,
-                  ASEs_gmxfolder='./',
-                  cname=None,
-                  fname=None,
-                  pname=None):
+                  system_changes=all_changes):
         """ runs a gromacs-mdrun and
         gets energy and forces
         rest below is to make gromacs calculator
@@ -453,9 +459,10 @@ class Gromacs(FileIOCalculator):
             'pbc', 'initial_charges' and 'initial_magmoms'.
 
         """
-        print("test string")
-
-        self.run_with_grompp(fname=fname, cname=cname, pname=pname, ASEs_gmxfolder=ASEs_gmxfolder)
+        c_temp_name = self.ASEs_gmxfolder+'c_temp.gro'
+        cname = self.cname
+        # self.update_gro(cname, c_temp_name, atoms)
+        self.run_with_grompp()
         if self.clean:
             do_clean('#*')
         # get energy
@@ -475,6 +482,9 @@ class Gromacs(FileIOCalculator):
         with open(self.label + '.Energy.xvg') as fd:
             lastline = fd.readlines()[-1]
             energy = float(lastline.split()[1])
+            print(' energy * units.kJ / units.mol')
+            print(energy, units.kJ, units.mol)
+            print(units.nm, units.fs)
         # We go for ASE units !
         self.results['energy'] = energy * units.kJ / units.mol
         # energies are about 100 times bigger in Gromacs units
@@ -496,5 +506,6 @@ class Gromacs(FileIOCalculator):
         tmp_forces = forces / units.nm * units.kJ / units.mol
         tmp_forces = np.reshape(tmp_forces, (-1, 3))
         self.results['forces'] = tmp_forces
+
 
 
